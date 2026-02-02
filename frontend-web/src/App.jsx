@@ -1,35 +1,36 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { CartProvider } from './context/CartContext'; // <--- IMPORT 1
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Cart from './pages/Cart'; 
+import Dashboard from './pages/Dashboard';
+import AdminLayout from './components/AdminLayout'; // Import du Layout
+import AdminDashboard from './pages/admin/AdminDashboard'; // Import du Dashboard
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    // <--- IMPORT 2 : On enveloppe TOUT l'app ici
+    <CartProvider>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/account" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} /> {/* Alias */}
+          {/* --- ROUTES ADMIN (Protégées) --- */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} /> {/* Vue A */}
+            <Route path="products" element={<div className="text-white">TODO: Vue B Products</div>} />
+            <Route path="orders" element={<div className="text-white">TODO: Vue B Orders</div>} />
+            <Route path="users" element={<div className="text-white">TODO: Vue B Users</div>} />
+          </Route>
+        </Routes>
+      </Router>
+    </CartProvider>
+  );
 }
 
-export default App
+export default App;

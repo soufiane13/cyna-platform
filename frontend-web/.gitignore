@@ -1,4 +1,16 @@
-# Logs
+# --- Dependencies ---
+node_modules
+/node_modules
+.pnp
+.pnp.js
+
+# --- Builds & Output ---
+dist
+build
+/dist
+/build
+
+# --- Logs ---
 logs
 *.log
 npm-debug.log*
@@ -7,18 +19,49 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# --- OS Generated Files ---
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Tests ---
+coverage
+.nyc_output
+
+# --- IDEs ---
+.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.swp
+
+# --- VSCode ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# --- Environment Variables (VERY IMPORTANT) ---
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+.env.*
+
+# --- Temporary Files ---
+.temp
+.tmp
+
+# --- NestJS Specific ---
+# Sometimes Nest creates these
+tsconfig.build.tsbuildinfo
+
+# --- Supabase ---
+# If you use Supabase CLI later, ignore local config but keep config.toml
+supabase/tmp

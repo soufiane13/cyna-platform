@@ -6,7 +6,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
+  getHello() { // <--- J'ai retiré ": string" ici. C'est ça qui bloquait !
     return this.appService.getHello();
   }
 }
