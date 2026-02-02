@@ -2,7 +2,9 @@ const API_URL = "http://localhost:3000"; // Ton backend NestJS
 
 export const fetchProducts = async () => {
   try {
-    const response = await fetch(`${API_URL}`);
+    // 👇 MODIFICATION IMPORTANTE : On ajoute "/products" ici
+    const response = await fetch(`${API_URL}/products`);
+    
     if (!response.ok) {
       throw new Error("Erreur réseau");
     }
