@@ -1,151 +1,149 @@
-import React from 'react';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar, Legend
-} from 'recharts';
-import { TrendingUp, Users, ShoppingCart, AlertCircle } from 'lucide-react';
-
-// --- MOCK DATA ---
-const salesData = [
-  { name: 'Mon', revenue: 4000 },
-  { name: 'Tue', revenue: 3000 },
-  { name: 'Wed', revenue: 5000 },
-  { name: 'Thu', revenue: 2780 },
-  { name: 'Fri', revenue: 1890 },
-  { name: 'Sat', revenue: 2390 },
-  { name: 'Sun', revenue: 3490 },
-];
-
-const categoryData = [
-  { name: 'SOC', value: 400, color: '#00F0FF' }, // Cyan
-  { name: 'EDR', value: 300, color: '#8A2BE2' }, // Purple
-  { name: 'XDR', value: 300, color: '#00FF94' }, // Green
-];
-
-const basketData = [
-  { name: 'SOC', avg: 1200 },
-  { name: 'EDR', avg: 900 },
-  { name: 'XDR', avg: 2400 },
-];
+import React, { useState } from 'react';
+import { Megaphone, Save, Users, ShoppingCart, DollarSign, Activity, TrendingUp } from 'lucide-react';
 
 const AdminDashboard = () => {
-  return (
-    <div className="space-y-8 animate-fade-in">
-      
-      {/* 1. KPI CARDS ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard title="Total Revenue" value="$42,500" trend="+12%" icon={<TrendingUp size={20} />} isPositive={true} />
-        <KpiCard title="Active Subs" value="843" trend="+5%" icon={<Users size={20} />} isPositive={true} />
-        <KpiCard title="New Orders" value="12" trend="-2%" icon={<ShoppingCart size={20} />} isPositive={false} />
-        <KpiCard title="Pending Tickets" value="5" trend="Urgent" icon={<AlertCircle size={20} />} isPositive={false} isAlert={true} />
-      </div>
+    // État pour le texte de l'alerte
+    const [alertText, setAlertText] = useState('');
+    const [loading, setLoading] = useState(false);
 
-      {/* 2. CHARTS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
+    // Fonction pour sauvegarder l'alerte sur le serveur
+    const updateAlert = async () => {
+        if (!alertText) return; // Ne rien faire si vide
         
-        {/* Sales Histogram (Area Chart for nicer look) */}
-        <div className="bg-[#1C2128] border border-white/5 rounded-2xl p-6 flex flex-col">
-          <h3 className="text-[#F0F6FC] font-bold mb-6">Revenue Analytics (Weekly)</h3>
-          <div className="flex-1 w-full h-full min-h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00F0FF" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#00F0FF" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2D333B" vertical={false} />
-                <XAxis dataKey="name" stroke="#8B949E" tick={{fontSize: 12}} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8B949E" tick={{fontSize: 12}} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0B0E14', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: '#FFF' }}
-                  itemStyle={{ color: '#00F0FF' }}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#00F0FF" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        setLoading(true);
+        try {
+            const response = await fetch('http://localhost:3000/alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: alertText })
+            });
 
-        {/* ROW: Category + Basket (Split) */}
-        <div className="flex flex-col gap-6">
-            
-            {/* Category Donut */}
-            <div className="flex-1 bg-[#1C2128] border border-white/5 rounded-2xl p-6 flex items-center justify-between">
+            if (response.ok) {
+                alert("✅ Alerte mise à jour avec succès sur l'accueil !");
+                setAlertText(''); // Vider le champ après succès
+            } else {
+                alert("❌ Erreur lors de la mise à jour.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("❌ Erreur de connexion au serveur.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-8 min-h-screen bg-[#0B0E14] text-white animate-fade-in">
+            <header className="mb-10 flex justify-between items-center">
                 <div>
-                    <h3 className="text-[#F0F6FC] font-bold mb-2">Category Volume</h3>
-                    <p className="text-xs text-[#8B949E]">Distribution of sales by product type</p>
+                    <h1 className="text-4xl font-black tracking-tight text-white mb-2">DASHBOARD ADMIN</h1>
+                    <p className="text-cyna-text">Gérez vos produits, utilisateurs et l'interface du site.</p>
                 </div>
-                <div className="w-[180px] h-[180px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie 
-                                data={categoryData} 
-                                cx="50%" cy="50%" 
-                                innerRadius={40} 
-                                outerRadius={60} 
-                                paddingAngle={5} 
-                                dataKey="value"
-                            >
-                                {categoryData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                                ))}
-                            </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: '#0B0E14', borderColor: '#333', borderRadius: '8px' }} />
-                        </PieChart>
-                    </ResponsiveContainer>
+                <div className="px-4 py-2 bg-cyna-cyan/10 border border-cyna-cyan/20 text-cyna-cyan rounded-lg font-bold text-sm">
+                    Admin Connecté
                 </div>
-                <div className="space-y-2 text-xs">
-                    {categoryData.map(c => (
-                        <div key={c.name} className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{backgroundColor: c.color}}></div>
-                            <span className="text-[#8B949E]">{c.name}</span>
+            </header>
+
+            {/* --- 1. WIDGET DE GESTION DE L'ALERTE (NOUVEAU) --- */}
+            <section className="mb-12">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Megaphone size={20} className="text-cyna-cyan" />
+                    Bannière d'Alerte (Page d'Accueil)
+                </h2>
+                
+                <div className="bg-[#1C2128] border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row gap-4 items-center shadow-lg">
+                    <div className="flex-1 w-full">
+                        <label className="text-xs text-gray-400 font-bold mb-2 block uppercase">Message à afficher</label>
+                        <input 
+                            type="text" 
+                            value={alertText}
+                            onChange={(e) => setAlertText(e.target.value)}
+                            placeholder="Ex: ⚡ PROMO FLASH : -50% sur tous les produits EDR ce weekend !" 
+                            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-3 text-white font-medium focus:outline-none focus:border-cyna-cyan transition-colors"
+                        />
+                    </div>
+                    <button 
+                        onClick={updateAlert}
+                        disabled={loading}
+                        className="w-full md:w-auto bg-cyna-cyan text-black font-bold px-6 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-[#00D1E1] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Sauvegarde...' : <><Save size={18}/> Mettre à jour</>}
+                    </button>
+                </div>
+            </section>
+
+            {/* --- 2. STATISTIQUES (KPIs) --- */}
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <StatCard 
+                    icon={<Users size={24} />} 
+                    title="Utilisateurs" 
+                    value="1,234" 
+                    trend="+12%" 
+                    color="text-blue-400"
+                />
+                <StatCard 
+                    icon={<ShoppingCart size={24} />} 
+                    title="Commandes" 
+                    value="42" 
+                    trend="+5%" 
+                    color="text-green-400"
+                />
+                <StatCard 
+                    icon={<DollarSign size={24} />} 
+                    title="Revenu Mensuel" 
+                    value="8,540 €" 
+                    trend="+24%" 
+                    color="text-cyna-cyan"
+                />
+                <StatCard 
+                    icon={<Activity size={24} />} 
+                    title="Trafic Site" 
+                    value="15k" 
+                    trend="+8%" 
+                    color="text-purple-400"
+                />
+            </section>
+
+            {/* --- 3. ACTIVITÉ RÉCENTE (Exemple visuel) --- */}
+            <section className="bg-[#1C2128] border border-white/10 rounded-2xl p-6">
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <TrendingUp size={20} className="text-cyna-cyan" />
+                    Activité Récente
+                </h3>
+                <div className="space-y-4">
+                    {[1, 2, 3].map((item) => (
+                        <div key={item} className="flex items-center justify-between p-4 bg-[#0B0E14] rounded-lg border border-white/5 hover:border-white/20 transition-all cursor-pointer">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
+                                    JS
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-white text-sm">Jean S. a acheté "Cyna EDR Pro"</h4>
+                                    <p className="text-xs text-gray-500">Il y a 2 minutes</p>
+                                </div>
+                            </div>
+                            <span className="text-cyna-cyan font-bold">+ 14.99 €</span>
                         </div>
                     ))}
                 </div>
-            </div>
-
-            {/* Average Basket Bar */}
-            <div className="flex-1 bg-[#1C2128] border border-white/5 rounded-2xl p-6">
-                <h3 className="text-[#F0F6FC] font-bold mb-4 text-sm">Average Basket Value ($)</h3>
-                <div className="w-full h-[120px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={basketData} layout="vertical">
-                            <XAxis type="number" hide />
-                            <YAxis dataKey="name" type="category" stroke="#8B949E" tick={{fontSize: 10}} width={40} />
-                            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#0B0E14', borderColor: '#333' }} />
-                            <Bar dataKey="avg" fill="#F0F6FC" fillOpacity={0.2} radius={[0, 4, 4, 0]} barSize={20} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
+            </section>
         </div>
-
-      </div>
-    </div>
-  );
+    );
 };
 
-// --- Sub-Component: KPI Card ---
-const KpiCard = ({ title, value, trend, icon, isPositive, isAlert }) => (
-    <div className="bg-[#1C2128] border border-white/5 rounded-2xl p-6 relative overflow-hidden group hover:border-[#00F0FF]/30 transition-all">
+// Petit composant interne pour les cartes de stats
+const StatCard = ({ icon, title, value, trend, color }) => (
+    <div className="bg-[#1C2128] p-6 rounded-2xl border border-white/10 hover:border-cyna-cyan/30 transition-all group">
         <div className="flex justify-between items-start mb-4">
-            <div className={`p-2 rounded-lg ${isAlert ? 'bg-[#FF3B3B]/10 text-[#FF3B3B]' : 'bg-[#00F0FF]/10 text-[#00F0FF]'}`}>
+            <div className={`p-3 rounded-lg bg-white/5 ${color} group-hover:scale-110 transition-transform`}>
                 {icon}
             </div>
-            <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                isPositive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-            }`}>
+            <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
                 {trend}
             </span>
         </div>
-        <h4 className="text-[#8B949E] text-xs uppercase tracking-wider font-bold mb-1">{title}</h4>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        
-        {/* Decorative Glow */}
-        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[#00F0FF]/5 rounded-full blur-2xl group-hover:bg-[#00F0FF]/10 transition-all"></div>
+        <h3 className="text-gray-400 text-sm font-medium mb-1">{title}</h3>
+        <p className="text-3xl font-black text-white">{value}</p>
     </div>
 );
 
