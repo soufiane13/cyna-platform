@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import AdminLayout from './components/AdminLayout'; // Import du Layout
 import AdminDashboard from './pages/admin/AdminDashboard'; // Import du Dashboard
 import Category from './pages/Category';
+import ProductDetails from './pages/ProductDetails';
 
 function App() {
   return (
@@ -25,6 +26,9 @@ function App() {
           {/* 👇 LES DEUX LIGNES MAGIQUES SONT LÀ 👇 */}
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/category" element={<Category />} />
+
+
+          <Route path="/product/:id" element={<ProductDetails />} />
 
           {/* --- ROUTES ADMIN (Protégées) --- */}
           <Route path="/admin" element={<AdminLayout />}>
