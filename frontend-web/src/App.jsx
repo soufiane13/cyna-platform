@@ -3,10 +3,11 @@ import { CartProvider } from './context/CartContext'; // <--- IMPORT 1
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Cart from './pages/Cart'; 
+import Cart from './pages/Cart';
 import Dashboard from './pages/Dashboard';
 import AdminLayout from './components/AdminLayout'; // Import du Layout
 import AdminDashboard from './pages/admin/AdminDashboard'; // Import du Dashboard
+import Category from './pages/Category';
 
 function App() {
   return (
@@ -20,6 +21,11 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/account" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} /> {/* Alias */}
+
+          {/* 👇 LES DEUX LIGNES MAGIQUES SONT LÀ 👇 */}
+          <Route path="/category/:slug" element={<Category />} />
+          <Route path="/category" element={<Category />} />
+
           {/* --- ROUTES ADMIN (Protégées) --- */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} /> {/* Vue A */}
