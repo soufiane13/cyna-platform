@@ -9,6 +9,7 @@ import AdminLayout from './components/AdminLayout'; // Import du Layout
 import AdminDashboard from './pages/admin/AdminDashboard'; // Import du Dashboard
 import Category from './pages/Category';
 import ProductDetails from './pages/ProductDetails';
+import Search from './pages/Search';
 
 function App() {
   return (
@@ -29,6 +30,8 @@ function App() {
 
 
           <Route path="/product/:id" element={<ProductDetails />} />
+
+          {/* Moteur de Recherche */} <Route path="/search" element={<Search />} />
 
           {/* --- ROUTES ADMIN (Protégées) --- */}
           <Route path="/admin" element={<AdminLayout />}>
