@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { Trash2, Box, ShieldAlert, ArrowRight, Lock, Loader, ShieldCheck } from 'lucide-react';
-import { createOrder } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Cart = () => {
@@ -24,18 +23,36 @@ const Cart = () => {
     setIsSubmitting(true);
 
     try {
-      const totalTTC = cartTotal * 1.20;
-      const result = await createOrder(user.id, cart, totalTTC);
+      // On appelle maintenant directement le backend NestJS qui va générer la session Stripe
+      const response = await fetch('http://localhost:3000/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          cart: cart,
+          total: cartTotal, // Le backend utilisera le panier pour calculer le total final pour Stripe
+        }),
+      });
 
-      if (result && (result.status === 'SUCCESS' || result.orderId)) {
-        alert(`Commande #${result.orderId} validée avec succès !`);
-        localStorage.removeItem('cyna_cart');
-        window.location.href = '/dashboard'; // Redirige vers le nouveau Dashboard !
+      if (!response.ok) {
+        // Gérer les erreurs HTTP (ex: 500, 400)
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'La création de la commande a échoué.');
+      }
+      
+      const data = await response.json();
+      
+      // REDIRECTION VERS LA PAGE SÉCURISÉE DE STRIPE
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        console.error("Erreur: Aucune URL de paiement retournée par le backend.");
+        alert("Une erreur technique est survenue. Impossible de procéder au paiement.");
+        setIsSubmitting(false);
       }
     } catch (error) {
-      console.error("Erreur commande:", error);
-      alert("Une erreur est survenue lors de la validation de la commande.");
-    } finally {
+      console.error("Erreur lors de l'initialisation du paiement:", error);
+      alert(error.message || "Une erreur est survenue lors de l'initialisation du paiement.");
       setIsSubmitting(false);
     }
   };
@@ -192,13 +209,13 @@ const Cart = () => {
             >
               {isSubmitting ? (
                 <>
-                  <Loader className="animate-spin" size={20} /> TRAITEMENT EN COURS...
+                  <Loader className="animate-spin" size={20} /> REDIRECTION VERS LE PAIEMENT...
                 </>
               ) : hasUnavailableItems ? (
                 'PANIER INVALIDE (STOCK)'
               ) : (
                 <>
-                  VALIDER LE PAIEMENT <ArrowRight size={20} />
+                  PROCÉDER AU PAIEMENT SÉCURISÉ <ArrowRight size={20} />
                 </>
               )}
             </button>
@@ -231,5 +248,3 @@ const Cart = () => {
 };
 
 export default Cart;
-
-

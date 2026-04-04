@@ -1,10 +1,46 @@
-import React, { useState } from 'react';
-import { Megaphone, Save, Users, ShoppingCart, DollarSign, Activity, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Megaphone, Save, Users, ShoppingCart, DollarSign, Activity, TrendingUp, Image, Star, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 
 const AdminDashboard = () => {
     // État pour le texte de l'alerte
     const [alertText, setAlertText] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // États pour le Carrousel et Top Produits
+    const [carouselItems, setCarouselItems] = useState([]);
+    const [loadingCarousel, setLoadingCarousel] = useState(false);
+    const [topProducts, setTopProducts] = useState([
+        { id: 1, name: "CYNA EDR Premium", category: "EDR" },
+        { id: 2, name: "SOC Managé 24/7", category: "SOC" },
+        { id: 3, name: "Audit & Pentest", category: "AUDIT" },
+        { id: 4, name: "XDR Unified", category: "XDR" }
+    ]);
+
+    // Stats & Activités dynamiques
+    const [stats, setStats] = useState({ users: 1, orders: 0, revenue: 0 });
+    const [recentActivity, setRecentActivity] = useState([]);
+
+    // Charger le carrousel au démarrage
+    useEffect(() => {
+        fetch('http://localhost:3000/carousel')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => {
+                if (data && data.length > 0) setCarouselItems(data);
+                else setCarouselItems([{ title: 'Nouveau Slide', subtitle: 'Description...', visual: 'SOC', cta: 'Découvrir' }]);
+            })
+            .catch(err => console.error("Erreur chargement carrousel", err));
+
+        // Charger les commandes pour les KPI et l'activité récente
+        fetch('http://localhost:3000/orders')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => {
+                const totalRevenue = data.reduce((sum, o) => sum + Number(o.total_amount || o.total || 0), 0);
+                setStats(prev => ({ ...prev, orders: data.length, revenue: totalRevenue }));
+                // Les 5 commandes les plus récentes
+                setRecentActivity(data.slice(0, 5));
+            })
+            .catch(err => console.error("Erreur chargement commandes pour stats", err));
+    }, []);
 
     // Fonction pour sauvegarder l'alerte sur le serveur
     const updateAlert = async () => {
@@ -30,6 +66,38 @@ const AdminDashboard = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // --- FONCTIONS CARROUSEL ---
+    const handleCarouselChange = (index, field, value) => {
+        const newItems = [...carouselItems];
+        newItems[index][field] = value;
+        setCarouselItems(newItems);
+    };
+
+    const saveCarousel = async () => {
+        setLoadingCarousel(true);
+        try {
+            const response = await fetch('http://localhost:3000/carousel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: carouselItems })
+            });
+            if (response.ok) alert("✅ Carrousel mis à jour avec succès !");
+            else alert("❌ Erreur lors de la mise à jour.");
+        } catch (error) {
+            alert("❌ Erreur de connexion au serveur.");
+        } finally {
+            setLoadingCarousel(false);
+        }
+    };
+
+    // --- FONCTIONS TOP PRODUITS (Ordre) ---
+    const moveProduct = (index, direction) => {
+        const newItems = [...topProducts];
+        if (direction === 'up' && index > 0) [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+        else if (direction === 'down' && index < newItems.length - 1) [newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]];
+        setTopProducts(newItems);
     };
 
     return (
@@ -72,26 +140,83 @@ const AdminDashboard = () => {
                 </div>
             </section>
 
-            {/* --- 2. STATISTIQUES (KPIs) --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+                {/* --- 2. WIDGET CARROUSEL --- */}
+                <section className="bg-[#1C2128] border border-white/10 p-6 rounded-2xl shadow-lg flex flex-col h-full">
+                    <h2 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
+                        <span className="flex items-center gap-2"><Image size={20} className="text-cyna-cyan" /> Slides Carrousel</span>
+                        <button onClick={() => setCarouselItems([...carouselItems, { title: '', subtitle: '', visual: 'SOC', cta: 'Bouton' }])} className="text-cyna-cyan text-sm flex items-center gap-1 hover:underline">
+                            <Plus size={16} /> Ajouter
+                        </button>
+                    </h2>
+                    <div className="space-y-4 overflow-y-auto max-h-[350px] pr-2 flex-1">
+                        {carouselItems.map((item, idx) => (
+                            <div key={idx} className="bg-[#0B0E14] p-4 rounded-xl border border-white/5 relative group">
+                                <button onClick={() => setCarouselItems(carouselItems.filter((_, i) => i !== idx))} className="absolute top-3 right-3 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
+                                <input type="text" value={item.title} onChange={e => handleCarouselChange(idx, 'title', e.target.value)} placeholder="Titre principal" className="w-full bg-transparent text-white font-bold mb-2 focus:outline-none focus:text-cyna-cyan" />
+                                <input type="text" value={item.subtitle} onChange={e => handleCarouselChange(idx, 'subtitle', e.target.value)} placeholder="Sous-titre" className="w-full bg-transparent text-gray-400 text-sm mb-3 focus:outline-none" />
+                                <div className="flex gap-3">
+                                    <select value={item.visual} onChange={e => handleCarouselChange(idx, 'visual', e.target.value)} className="bg-[#1C2128] border border-white/10 rounded-lg px-2 py-1 text-xs text-gray-300 focus:outline-none">
+                                        <option value="SOC">Icône SOC</option>
+                                        <option value="EDR">Icône EDR</option>
+                                        <option value="XDR">Icône XDR</option>
+                                    </select>
+                                    <input type="text" value={item.cta} onChange={e => handleCarouselChange(idx, 'cta', e.target.value)} placeholder="Texte Bouton" className="flex-1 bg-[#1C2128] border border-white/10 rounded-lg px-3 py-1 text-xs text-white focus:outline-none focus:border-cyna-cyan" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={saveCarousel} disabled={loadingCarousel} className="w-full mt-4 bg-cyna-cyan text-black font-bold py-3 rounded-lg flex justify-center gap-2 hover:bg-[#00D1E1] transition-colors">
+                        {loadingCarousel ? 'Sauvegarde...' : <><Save size={18}/> Enregistrer le Carrousel</>}
+                    </button>
+                </section>
+
+                {/* --- 3. WIDGET TOP PRODUITS (Ordre) --- */}
+                <section className="bg-[#1C2128] border border-white/10 p-6 rounded-2xl shadow-lg flex flex-col h-full">
+                    <h2 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
+                        <span className="flex items-center gap-2"><Star size={20} className="text-[#F5A623]" /> Ordre Top Produits</span>
+                        <span className="text-xs bg-white/10 text-gray-400 px-2 py-1 rounded">Glisser ou utiliser les flèches</span>
+                    </h2>
+                    <div className="space-y-3 flex-1">
+                        {topProducts.map((prod, idx) => (
+                            <div key={prod.id} className="flex items-center justify-between bg-[#0B0E14] p-4 rounded-xl border border-white/5 hover:border-white/20 transition-colors">
+                                <div>
+                                    <p className="font-bold text-white text-sm">{prod.name}</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest">{prod.category}</p>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <button onClick={() => moveProduct(idx, 'up')} disabled={idx === 0} className="p-1 text-gray-500 hover:text-white disabled:opacity-20"><ArrowUp size={16}/></button>
+                                    <button onClick={() => moveProduct(idx, 'down')} disabled={idx === topProducts.length - 1} className="p-1 text-gray-500 hover:text-white disabled:opacity-20"><ArrowDown size={16}/></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => alert("À connecter à votre base de données NestJS (Route /top-products)")} className="w-full mt-4 bg-white/5 border border-white/10 text-white font-bold py-3 rounded-lg flex justify-center gap-2 hover:bg-white/10 transition-colors">
+                        <Save size={18}/> Enregistrer l'ordre
+                    </button>
+                </section>
+            </div>
+
+            {/* --- 4. STATISTIQUES (KPIs) --- */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 <StatCard 
                     icon={<Users size={24} />} 
                     title="Utilisateurs" 
-                    value="1,234" 
+                    value={stats.users.toString()} 
                     trend="+12%" 
                     color="text-blue-400"
                 />
                 <StatCard 
                     icon={<ShoppingCart size={24} />} 
                     title="Commandes" 
-                    value="42" 
+                    value={stats.orders.toString()} 
                     trend="+5%" 
                     color="text-green-400"
                 />
                 <StatCard 
                     icon={<DollarSign size={24} />} 
                     title="Revenu Mensuel" 
-                    value="8,540 €" 
+                    value={`${stats.revenue.toFixed(2)} €`} 
                     trend="+24%" 
                     color="text-cyna-cyan"
                 />
@@ -111,20 +236,24 @@ const AdminDashboard = () => {
                     Activité Récente
                 </h3>
                 <div className="space-y-4">
-                    {[1, 2, 3].map((item) => (
-                        <div key={item} className="flex items-center justify-between p-4 bg-[#0B0E14] rounded-lg border border-white/5 hover:border-white/20 transition-all cursor-pointer">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
-                                    JS
+                    {recentActivity.length === 0 ? (
+                        <p className="text-gray-500 text-sm">Aucune activité récente.</p>
+                    ) : (
+                        recentActivity.map((order) => (
+                            <div key={order.id} className="flex items-center justify-between p-4 bg-[#0B0E14] rounded-lg border border-white/5 hover:border-white/20 transition-all cursor-pointer">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-cyna-cyan/10 flex items-center justify-center text-cyna-cyan font-bold">
+                                        <ShoppingCart size={18}/>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-white text-sm">Nouvelle commande #{order.id.substring(0,6)}</h4>
+                                        <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleString()}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 className="font-bold text-white text-sm">Jean S. a acheté "Cyna EDR Pro"</h4>
-                                    <p className="text-xs text-gray-500">Il y a 2 minutes</p>
-                                </div>
+                                <span className="text-cyna-cyan font-bold">+ {Number(order.total_amount || order.total || 0).toFixed(2)} €</span>
                             </div>
-                            <span className="text-cyna-cyan font-bold">+ 14.99 €</span>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </section>
         </div>

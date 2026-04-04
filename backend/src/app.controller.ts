@@ -18,4 +18,15 @@ export class AppController {
   updateAlert(@Body('message') message: string) {
     return this.appService.updateAlert(message);
   }
+
+  // --- ROUTES CARROUSEL ---
+  @Get('carousel') // Lire le carrousel
+  getCarousel() { 
+    return this.appService.getCarousel(); 
+  }
+
+  @Post('carousel') // Mettre à jour le carrousel
+  updateCarousel(@Body('items') items: any[]) {
+    return this.appService.updateCarousel(items);
+  }
 }

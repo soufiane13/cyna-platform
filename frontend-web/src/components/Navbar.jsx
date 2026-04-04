@@ -22,22 +22,24 @@ const Navbar = () => {
 
   // 2. SAFE NAME LOGIC
   const getSafeName = () => {
-    if (!user || !user.user_metadata) return 'Client';
+    const fallback = user?.user_metadata?.role === 'admin' ? 'Admin' : 'Client';
+    if (!user || !user.user_metadata) return fallback;
     
     const nameData = user.user_metadata.full_name;
     
     // If string (Normal)
-    if (typeof nameData === 'string') return nameData;
+    if (typeof nameData === 'string' && nameData.trim() !== '') return nameData;
     
     // If object (Supabase weirdness)
     if (typeof nameData === 'object' && nameData?.full_name) return nameData.full_name;
     
-    return 'Client';
+    return fallback;
   };
 
   const displayName = getSafeName();
   // Get initial or default to 'U'
   const displayInitial = user?.email ? user.email[0].toUpperCase() : 'U';
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   // ==========================================
   // 3. AFFICHAGE (UI / FRONT-END)
@@ -89,11 +91,11 @@ const Navbar = () => {
               <>
                 <div className="flex flex-col items-end">
                   <span className="text-sm font-bold text-white leading-tight">{displayName}</span>
-                  <Link to="/dashboard" className="text-xs text-cyna-cyan hover:text-white transition-colors">
-                    Mon Espace Client
+                  <Link to={isAdmin ? "/admin" : "/dashboard"} className="text-xs text-cyna-cyan hover:text-white transition-colors">
+                    {isAdmin ? 'Mon Espace Admin' : 'Mon Espace Client'}
                   </Link>
                 </div>
-                <Link to="/dashboard" className="w-10 h-10 rounded-xl bg-cyna-cyan/10 border border-cyna-cyan/30 flex items-center justify-center text-cyna-cyan font-black hover:bg-cyna-cyan hover:text-black transition-all shadow-[0_0_15px_rgba(0,240,255,0.15)] relative group">
+                <Link to={isAdmin ? "/admin" : "/dashboard"} className="w-10 h-10 rounded-xl bg-cyna-cyan/10 border border-cyna-cyan/30 flex items-center justify-center text-cyna-cyan font-black hover:bg-cyna-cyan hover:text-black transition-all shadow-[0_0_15px_rgba(0,240,255,0.15)] relative group">
                   {displayInitial}
                   <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#00FF94] border-2 border-[#0B0E14] rounded-full"></span>
                 </Link>
@@ -140,8 +142,8 @@ const Navbar = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-base font-bold text-white">{displayName}</span>
-                  <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-bold text-cyna-cyan">
-                    Mon Espace Client
+                  <Link to={isAdmin ? "/admin" : "/dashboard"} onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-bold text-cyna-cyan">
+                    {isAdmin ? 'Mon Espace Admin' : 'Mon Espace Client'}
                   </Link>
                 </div>
               </>
@@ -168,4 +170,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

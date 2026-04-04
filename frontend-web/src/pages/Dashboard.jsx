@@ -61,6 +61,7 @@ const Dashboard = () => {
   };
 
   const displayName = getSafeName();
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   // --- LOGOUT LOGIC ---
   const handleLogout = () => {
@@ -76,11 +77,10 @@ const Dashboard = () => {
       return;
     }
 
-    // Charger l'historique réel si on est sur l'onglet history
-    if (activeTab === 'history') {
+    // Charger l'historique pour l'historique ET les abonnements
+    if (activeTab === 'history' || activeTab === 'subs') {
       fetchUserOrders(user.id).then(data => setOrders(data));
     }
-    // TODO: Tu pourras ajouter un fetchUserSubscriptions(user.id) ici plus tard !
   }, [user, navigate, activeTab]);
 
   if (!user) return null;
@@ -89,7 +89,7 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'profile': return <ProfileView user={user} safeName={displayName} />;
-      case 'subs': return <SubscriptionsView />;
+      case 'subs': return <SubscriptionsView orders={orders} />;
       case 'billing': return <BillingView />;
       case 'history': return <HistoryView orders={orders} />;
       default: return <ProfileView user={user} safeName={displayName} />;
@@ -121,6 +121,16 @@ const Dashboard = () => {
             <NavItem icon={<CreditCard size={20} />} label="Facturation" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
             <NavItem icon={<Clock size={20} />} label="Historique" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
 
+            {/* SECTION ADMIN */}
+            {isAdmin && (
+              <div className="pt-4 mt-4 border-t border-[#2D333B]">
+                <button onClick={() => navigate('/admin')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#F5A623] hover:bg-[#F5A623]/10 transition-colors group">
+                  <Shield size={20} className="group-hover:scale-110 transition-transform" />
+                  <span className="font-bold">Accès Backoffice</span>
+                </button>
+              </div>
+            )}
+
             <div className="pt-8 mt-8 border-t border-[#2D333B]">
               <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#FF3B3B] hover:bg-[#FF3B3B]/10 transition-colors group">
                 <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
@@ -147,6 +157,15 @@ const Dashboard = () => {
               {tab === 'history' && 'Historique'}
             </button>
           ))}
+          {/* BOUTON ADMIN MOBILE */}
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="whitespace-nowrap px-5 py-3 rounded-xl text-sm font-bold border transition-all bg-[#1C2128] text-[#F5A623] border-[#2D333B] hover:bg-[#F5A623]/10"
+            >
+              Backoffice
+            </button>
+          )}
         </div>
 
         {/* === MAIN CONTENT AREA === */}
@@ -176,69 +195,166 @@ const NavItem = ({ icon, label, active, onClick }) => (
   </button>
 );
 
-const ProfileView = ({ user, safeName }) => (
-  <div className="bg-[#1C2128] rounded-[24px] p-6 md:p-10 border border-[#2D333B] shadow-2xl">
-    <h2 className="text-2xl lg:text-3xl font-black text-white mb-8">Informations Personnelles</h2>
+const ProfileView = ({ user, safeName }) => {
+  const [formData, setFormData] = useState({
+    fullName: safeName || '',
+    phone: user?.user_metadata?.phone || '',
+    company: user?.user_metadata?.company || '',
+    address: user?.user_metadata?.address || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-      <div className="space-y-3">
-        <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Nom Complet (Contact Légal)</label>
-        <input type="text" defaultValue={safeName} className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
-      </div>
-      <div className="space-y-3">
-        <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Adresse Email</label>
-        <input type="email" defaultValue={user.email} disabled className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-gray-500 font-medium cursor-not-allowed opacity-70" />
-        <p className="text-[11px] text-[#A0A0A0] flex items-center gap-1.5"><AlertCircle size={12} /> Liée à votre authentification Supabase.</p>
-      </div>
-    </div>
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    <div className="border-t border-white/5 pt-8">
-      <h3 className="text-lg font-bold text-white mb-4">Sécurité du compte</h3>
-      <button className="bg-white/5 border border-white/10 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors">Modifier le mot de passe</button>
-    </div>
-  </div>
-);
+  const handleSave = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      const res = await fetch(`http://localhost:3000/auth/profile/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      if (res.ok) {
+        const updatedUser = await res.json();
+        // Mettre à jour le localStorage avec les nouvelles données
+        const currentUserData = JSON.parse(localStorage.getItem('user'));
+        localStorage.setItem('user', JSON.stringify({ ...currentUserData, user_metadata: updatedUser.user_metadata }));
+        setMessage('✅ Informations mises à jour avec succès !');
+      } else {
+        const errData = await res.json();
+        setMessage(`❌ Erreur: ${errData.message || 'Impossible de sauvegarder'}`);
+      }
+    } catch (err) {
+      setMessage('❌ Erreur de connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const SubscriptionsView = () => (
-  <div className="space-y-8">
-    <h2 className="text-2xl lg:text-3xl font-black text-white">Mes Abonnements SaaS</h2>
+  return (
+    <div className="bg-[#1C2128] rounded-[24px] p-6 md:p-10 border border-[#2D333B] shadow-2xl">
+      <h2 className="text-2xl lg:text-3xl font-black text-white mb-8">Informations Personnelles</h2>
 
-    {/* Carte d'Abonnement (Prête à être mappée avec la table subscriptions) */}
-    <div className="bg-[#1C2128] rounded-[24px] p-6 md:p-8 border border-[#2D333B] relative overflow-hidden group">
-      {/* Liseré vert sur le côté */}
-      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00FF94]"></div>
-
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <h3 className="text-xl md:text-2xl font-black text-white">CYNA EDR Premium</h3>
-            <span className="px-3 py-1 bg-[#00FF94]/10 text-[#00FF94] text-[10px] uppercase tracking-widest font-black rounded-md border border-[#00FF94]/20 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00FF94] animate-pulse"></span> ACTIF
-            </span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-[#A0A0A0] font-medium">
-            <p>Facturation : <span className="text-white">Mensuelle</span></p>
-            <p className="hidden sm:block">•</p>
-            <p>Prochain cycle : <span className="text-white">24 Mars 2026</span></p>
-            <p className="hidden sm:block">•</p>
-            <p>Licences : <span className="text-white">50 postes</span></p>
-          </div>
+      {message && (
+        <div className={`p-4 mb-8 rounded-xl text-sm font-bold animate-fade-in ${message.startsWith('✅') ? 'bg-[#00FF94]/10 border border-[#00FF94]/30 text-[#00FF94]' : 'bg-[#FF3B3B]/10 border border-[#FF3B3B]/30 text-[#FF3B3B]'}`}>
+          {message}
         </div>
+      )}
 
-        <div className="flex items-center gap-4 w-full lg:w-auto mt-4 lg:mt-0 pt-4 lg:pt-0 border-t border-white/5 lg:border-none">
-          <button className="flex-1 lg:flex-none px-6 py-3 border border-cyna-cyan text-cyna-cyan font-bold rounded-xl hover:bg-cyna-cyan hover:text-[#0B0E14] transition-all text-sm uppercase tracking-wider">
-            Gérer le plan
-          </button>
-          <button className="p-3 text-[#A0A0A0] hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-xl">
-            <Settings size={20} />
-          </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        <div className="space-y-3">
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Nom Complet (Contact Légal)</label>
+          <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
         </div>
+        <div className="space-y-3">
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Adresse Email</label>
+          <input type="email" defaultValue={user.email} disabled className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-gray-500 font-medium cursor-not-allowed opacity-70" />
+        </div>
+        <div className="space-y-3">
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Numéro de Téléphone</label>
+          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+33 6 00 00 00 00" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
+        </div>
+        <div className="space-y-3">
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Entreprise / Organisation</label>
+          <input type="text" name="company" value={formData.company} onChange={handleChange} placeholder="Nom de l'entreprise" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
+        </div>
+        <div className="space-y-3 md:col-span-2">
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Adresse Postale / Facturation</label>
+          <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="123 Avenue de la Cybersécurité, 75000 Paris" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
+        </div>
+      </div>
 
+      <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <button onClick={handleSave} disabled={loading} className="w-full md:w-auto bg-cyna-cyan text-[#0B0E14] font-black px-8 py-4 rounded-xl hover:bg-white transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center justify-center">
+          {loading ? <span className="animate-pulse">SAUVEGARDE EN COURS...</span> : 'ENREGISTRER LES MODIFICATIONS'}
+        </button>
+        <button className="w-full md:w-auto bg-white/5 border border-white/10 text-white font-bold px-6 py-4 rounded-xl hover:bg-white/10 transition-colors">
+          Modifier le mot de passe
+        </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
+
+const SubscriptionsView = ({ orders }) => {
+  // 1. Filtrer les commandes validées/payées
+  const paidOrders = orders.filter(o => o.status === 'paid' || o.status === 'completed');
+  
+  // 2. Extraire tous les produits de ces commandes pour en faire des abonnements actifs
+  const activeSubs = paidOrders.flatMap(order => 
+    (order.order_items || []).map(item => ({
+      ...item,
+      order_date: order.created_at || order.date_commande
+    }))
+  );
+
+  if (activeSubs.length === 0) {
+    return (
+      <div className="space-y-8">
+        <h2 className="text-2xl lg:text-3xl font-black text-white">Mes Abonnements SaaS</h2>
+        <div className="text-center py-24 bg-[#1C2128] rounded-[24px] border border-[#2D333B]">
+          <div className="w-20 h-20 bg-[#0B0E14] rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
+            <ShieldCheck size={32} className="text-gray-500" />
+          </div>
+          <h3 className="text-2xl font-black text-white mb-2">Aucun abonnement actif</h3>
+          <p className="text-[#A0A0A0]">Les services apparaîtront ici une fois votre paiement validé.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <h2 className="text-2xl lg:text-3xl font-black text-white">Mes Abonnements SaaS</h2>
+      
+      <div className="space-y-4">
+        {activeSubs.map((sub, idx) => {
+          const productName = sub.products?.name || sub.products?.nom || "Service Cyber";
+          const isYearly = sub.selected_plan === 'yearly';
+          
+          // Calcul dynamique du prochain cycle de facturation
+          const nextDate = new Date(sub.order_date);
+          if (isYearly) nextDate.setFullYear(nextDate.getFullYear() + 1);
+          else nextDate.setMonth(nextDate.getMonth() + 1);
+
+          return (
+            <div key={idx} className="bg-[#1C2128] rounded-[24px] p-6 md:p-8 border border-[#2D333B] relative overflow-hidden group hover:border-cyna-cyan/30 transition-colors">
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00FF94]"></div>
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <h3 className="text-xl md:text-2xl font-black text-white">{productName}</h3>
+                    <span className="px-3 py-1 bg-[#00FF94]/10 text-[#00FF94] text-[10px] uppercase tracking-widest font-black rounded-md border border-[#00FF94]/20 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#00FF94] animate-pulse"></span> ACTIF
+                    </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-[#A0A0A0] font-medium">
+                    <p>Facturation : <span className="text-white">{isYearly ? 'Annuelle' : 'Mensuelle'}</span></p>
+                    <p className="hidden sm:block">•</p>
+                    <p>Prochain cycle : <span className="text-white">{nextDate.toLocaleDateString()}</span></p>
+                    <p className="hidden sm:block">•</p>
+                    <p>Licences : <span className="text-white">{sub.quantity} poste{sub.quantity > 1 ? 's' : ''}</span></p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 w-full lg:w-auto mt-4 lg:mt-0 pt-4 lg:pt-0 border-t border-white/5 lg:border-none">
+                  <button className="flex-1 lg:flex-none px-6 py-3 border border-cyna-cyan text-cyna-cyan font-bold rounded-xl hover:bg-cyna-cyan hover:text-[#0B0E14] transition-all text-sm uppercase tracking-wider">
+                    Gérer le plan
+                  </button>
+                  <button className="p-3 text-[#A0A0A0] hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-xl">
+                    <Settings size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const BillingView = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -359,13 +475,17 @@ const OrderRow = ({ order }) => {
         </div>
 
         {/* BOUTON TÉLÉCHARGEMENT CONNECTÉ À L'API NESTJS */}
-        <button
-          onClick={() => downloadInvoice(order.id)}
-          className="flex items-center gap-2 bg-white/5 hover:bg-cyna-cyan hover:text-[#0B0E14] text-white px-4 py-3 rounded-xl transition-all font-bold text-sm"
-          title="Télécharger Facture PDF"
-        >
-          <Download size={18} /> <span className="hidden md:inline">PDF</span>
-        </button>
+        {isPaid ? (
+          <button
+            onClick={() => downloadInvoice(order.id)}
+            className="flex items-center gap-2 bg-white/5 hover:bg-cyna-cyan hover:text-[#0B0E14] text-white px-4 py-3 rounded-xl transition-all font-bold text-sm"
+            title="Télécharger Facture PDF"
+          >
+            <Download size={18} /> <span className="hidden md:inline">PDF</span>
+          </button>
+        ) : (
+          <span className="text-[10px] text-gray-500 italic max-w-[100px] md:max-w-none text-right leading-tight">Facture indisponible<br/>(En attente de validation)</span>
+        )}
       </div>
 
     </div>
@@ -373,5 +493,3 @@ const OrderRow = ({ order }) => {
 };
 
 export default Dashboard;
-
-

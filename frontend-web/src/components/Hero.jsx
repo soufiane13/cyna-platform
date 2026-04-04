@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Activity, Lock, Server } from 'lucide-react'; // Icônes temporaires pour les visuels
 
-const slides = [
+// Fallback par défaut si la BDD est vide
+const defaultSlides = [
   {
     id: 1,
     title: "Secure Your Future with Intelligent SOC.",
@@ -26,7 +27,18 @@ const slides = [
 ];
 
 const Hero = () => {
+  const [slides, setSlides] = useState(defaultSlides);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // 1. Récupération des données du Carrousel depuis NestJS
+  useEffect(() => {
+    fetch('http://localhost:3000/carousel')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.length > 0) setSlides(data);
+      })
+      .catch(err => console.error("Erreur de récupération du carrousel :", err));
+  }, []);
 
   // Rotation automatique du carrousel (toutes les 5 secondes)
   useEffect(() => {

@@ -1,20 +1,31 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import PDFDocument from 'pdfkit';
+import Stripe from 'stripe';
 
 @Injectable()
 export class OrdersService {
   private supabase;
+  private stripe: Stripe;
 
   constructor() {
     const sbUrl = process.env.SUPABASE_URL;
     const sbKey = process.env.SUPABASE_KEY;
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
 
     if (!sbUrl || !sbKey) {
       throw new Error('⚠️ Il manque SUPABASE_URL ou SUPABASE_KEY dans le fichier .env !');
     }
 
+    if (!stripeKey || stripeKey.trim() === '') {
+      throw new Error('⚠️ Il manque STRIPE_SECRET_KEY dans le fichier .env ! Allez sur le dashboard Stripe pour la récupérer.');
+    }
+
     this.supabase = createClient(sbUrl, sbKey);
+
+    this.stripe = new Stripe(stripeKey, {
+      apiVersion: '2026-03-25.dahlia' as any, // Version requise par votre SDK local
+    });
   }
 
   async create(createOrderDto: any) {
@@ -26,9 +37,9 @@ export class OrdersService {
       .insert([
         {
           user_id: userId, // Attention: Supabase Auth utilise des UUID
-          total: total,
+          total_amount: total,
           status: 'pending',
-          billing_snapshot: 'Adresse par défaut',
+          billing_address_snapshot: 'Adresse par défaut',
         },
       ])
       .select()
@@ -36,7 +47,7 @@ export class OrdersService {
 
     if (orderError) {
       console.error(orderError);
-      throw new HttpException("Erreur création commande", HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException("Erreur création commande : " + orderError.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     const orderId = order.id;
@@ -47,6 +58,7 @@ export class OrdersService {
       product_id: item.id,
       quantity: item.quantity,
       price_at_purchase: item.price, // On fige le prix
+      selected_plan: item.duration || 'monthly', // On enregistre le plan choisi (par défaut mensuel)
     }));
 
     // 3. INSÉRER LES ITEMS
@@ -56,7 +68,7 @@ export class OrdersService {
 
     if (itemsError) {
       console.error(itemsError);
-      throw new HttpException("Erreur ajout produits", HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException("Erreur ajout produits : " + itemsError.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // 4. METTRE À JOUR LE STOCK (Table 'products')
@@ -75,10 +87,42 @@ export class OrdersService {
       }
     }
 
+    // 5. CRÉER LA SESSION DE PAIEMENT STRIPE
+    const lineItems = cart.map((item) => ({
+      price_data: {
+        currency: 'eur',
+        product_data: {
+          name: item.name || 'Produit Cyber', // Ajustez selon les données du cart
+        },
+        unit_amount: Math.round(item.price * 100), // Stripe attend des centimes (ex: 10€ -> 1000)
+      },
+      quantity: item.quantity,
+    }));
+
+    let checkoutUrl: string | null = null;
+    // On sécurise l'URL du frontend avec un fallback local
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    try {
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode: 'payment',
+        line_items: lineItems,
+        success_url: `${frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${frontendUrl}/cart?canceled=true`,
+        client_reference_id: orderId, // Pour lier le paiement à la commande
+      });
+      checkoutUrl = session.url;
+    } catch (err) {
+      console.error('Erreur Stripe:', err);
+      throw new HttpException('Erreur lors de l\'initialisation du paiement', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     return { 
-      message: 'Commande validée !', 
+      message: 'Commande créée, en attente de paiement !', 
       orderId: orderId, 
-      status: 'SUCCESS' 
+      status: 'PENDING_PAYMENT',
+      checkoutUrl: checkoutUrl // L'URL que le frontend va utiliser pour rediriger le client
     };
   }
 
@@ -120,6 +164,11 @@ export class OrdersService {
 
     if (error || !order) {
       throw new HttpException('Commande introuvable', HttpStatus.NOT_FOUND);
+    }
+
+    // Bloquer le téléchargement si la commande n'est pas payée/validée
+    if (order.status !== 'paid' && order.status !== 'completed') {
+      throw new HttpException('La facture n\'est pas encore disponible. Le paiement doit être validé.', HttpStatus.FORBIDDEN);
     }
 
     // 2. Créer un document PDF en mémoire
@@ -169,7 +218,7 @@ export class OrdersService {
     // TOTAL
     doc.moveDown();
     doc.text('------------------------------------------------------', 50, y + 20);
-    doc.fontSize(14).text(`TOTAL À PAYER : ${Number(order.total).toFixed(2)} €`, 350, y + 40, { align: 'right' });
+    doc.fontSize(14).text(`TOTAL À PAYER : ${Number(order.total_amount || order.total).toFixed(2)} €`, 350, y + 40, { align: 'right' });
 
     // FIN
     doc.end();

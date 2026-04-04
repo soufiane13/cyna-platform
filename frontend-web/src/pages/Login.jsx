@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-// ⚠️ Assure-toi que ce chemin correspond bien à ton service Supabase/NestJS
-import { loginUser, registerUser } from '../services/authService';
-import { ArrowLeft, Check, AlertCircle, Eye, EyeOff, Mail, Lock, User, Shield } from 'lucide-react';
+import { ArrowLeft, Check, AlertCircle, Eye, EyeOff, Mail, Lock, User, Shield, Smartphone } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -10,7 +8,12 @@ const Auth = () => {
   // ==========================================
   // 1. ÉTATS (DATA & UI)
   // ==========================================
-  const [view, setView] = useState('login'); // 'login' | 'register' | 'forgot'
+  const [view, setView] = useState('login'); // 'login' | 'register' | 'forgot' | 'setup-2fa' | 'verify-2fa'
+  const [tempToken, setTempToken] = useState(null);
+  const [factorId, setFactorId] = useState(null);
+  const [qrCode, setQrCode] = useState(null);
+  const [twoFaCode, setTwoFaCode] = useState('');
+  const [secret, setSecret] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -54,15 +57,70 @@ const Auth = () => {
 
     try {
       if (view === 'login') {
-        const { user, error } = await loginUser(formData.email, formData.password);
-        if (error) throw error;
-        localStorage.setItem('user', JSON.stringify(user));
+        const loginRes = await fetch('http://localhost:3000/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, password: formData.password })
+        });
+        const data = await loginRes.json();
+
+        if (!loginRes.ok) {
+          throw new Error(data.message || "Identifiants invalides");
+        }
+
+        if (data.mfaSetupRequired) {
+          setTempToken(data.token);
+          
+          // Appel au backend pour générer le QR Code
+          const setupRes = await fetch('http://localhost:3000/auth/2fa/setup', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${data.token}` }
+          });
+          const setupData = await setupRes.json();
+          if (!setupRes.ok) throw new Error(setupData.message || "Erreur lors de la configuration 2FA.");
+          
+          setQrCode(setupData.qrCode);
+          setFactorId(setupData.factorId);
+          setSecret(setupData.secret);
+          setView('setup-2fa');
+          setSuccessMsg("Configuration requise : Scannez le QR Code.");
+          return;
+        }
+
+        if (data.mfaRequired) {
+          setTempToken(data.token);
+          setFactorId(data.factorId);
+          setView('verify-2fa');
+          setSuccessMsg("Sécurité renforcée : Entrez votre code 2FA.");
+          return;
+        }
+
+        localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/dashboard'); 
         window.location.reload();
       } 
+      else if (view === 'setup-2fa' || view === 'verify-2fa') {
+        const verifyRes = await fetch('http://localhost:3000/auth/2fa/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tempToken}` },
+          body: JSON.stringify({ factorId, code: twoFaCode })
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyRes.ok) throw new Error(verifyData.message || "Code 2FA invalide.");
+
+        localStorage.setItem('user', JSON.stringify(verifyData.user));
+        navigate('/dashboard');
+        window.location.reload();
+      }
       else if (view === 'register') {
-        const { user, error } = await registerUser(formData.email, formData.password, { full_name: formData.fullName });
-        if (error) throw error;
+        const registerRes = await fetch('http://localhost:3000/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, password: formData.password, fullName: formData.fullName })
+        });
+        const data = await registerRes.json();
+        if (!registerRes.ok) throw new Error(data.message || "Erreur lors de l'inscription");
+
         setSuccessMsg("Compte sécurisé créé ! Redirection...");
         setTimeout(() => {
           setView('login');
@@ -70,8 +128,15 @@ const Auth = () => {
         }, 2000);
       }
       else if (view === 'forgot') {
-        // Simulation d'envoi (à connecter à Supabase resetPasswordForEmail plus tard)
-        setSuccessMsg("Lien de réinitialisation sécurisé envoyé !");
+        const resetRes = await fetch('http://localhost:3000/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email })
+        });
+        const resetData = await resetRes.json();
+        if (!resetRes.ok) throw new Error(resetData.message || "Erreur lors de l'envoi du lien de réinitialisation.");
+        
+        setSuccessMsg("Lien de réinitialisation sécurisé envoyé ! Vérifiez votre boîte de réception.");
       }
     } catch (err) {
       setError(err.message || "Identifiants invalides ou erreur de connexion.");
@@ -83,10 +148,10 @@ const Auth = () => {
   // ==========================================
   // 3. COMPOSANT D'INPUT RÉUTILISABLE
   // ==========================================
-  const renderInput = (label, name, type = "text", placeholder, icon = null) => (
+  const renderInput = (label, name, type = "text", placeholder, icon = null, autoComplete = "off") => (
     <div className="mb-6 animate-fade-in">
       <div className="flex justify-between items-end mb-2">
-        <label className="block text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">
+        <label htmlFor={name} className="block text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">
           {label}
         </label>
         {name === 'password' && view === 'login' && (
@@ -102,6 +167,8 @@ const Auth = () => {
 
       <div className="relative group">
         <input
+          id={name}
+          autoComplete={autoComplete}
           type={name === 'password' && showPassword ? 'text' : type}
           name={name}
           value={formData[name]}
@@ -173,11 +240,14 @@ const Auth = () => {
             {view === 'login' && "Portail d'accès"}
             {view === 'register' && "Créer une instance"}
             {view === 'forgot' && "Réinitialisation"}
+          {view === 'setup-2fa' && "Configuration 2FA"}
+          {view === 'verify-2fa' && "Vérification 2FA"}
           </h1>
           <p className="text-sm text-[#A0A0A0] font-medium">
             {view === 'login' && "Authentifiez-vous pour accéder à votre SOC."}
             {view === 'register' && "Rejoignez l'élite de la protection B2B."}
             {view === 'forgot' && "Un lien sécurisé vous sera envoyé."}
+          {(view === 'setup-2fa' || view === 'verify-2fa') && "Sécurité administrateur requise."}
           </p>
         </div>
 
@@ -198,9 +268,34 @@ const Auth = () => {
         {/* FORMULAIRE */}
         <form onSubmit={handleSubmit} className="space-y-2">
           
-          {view === 'register' && renderInput("Nom du Responsable", "fullName", "text", "Ex: Jean Dupont", <User size={18}/>)}
-          {renderInput("Adresse Email Pro", "email", "email", "contact@entreprise.com", <Mail size={18}/>)}
-          {view !== 'forgot' && renderInput("Clé d'accès", "password", "password", "••••••••", <Lock size={18}/>)}
+          {view === 'register' && renderInput("Nom du Responsable", "fullName", "text", "Ex: Jean Dupont", <User size={18}/>, "name")}
+          {(view === 'login' || view === 'register' || view === 'forgot') && renderInput("Adresse Email Pro", "email", "email", "contact@entreprise.com", <Mail size={18}/>, "email")}
+          {(view === 'login' || view === 'register') && renderInput("Clé d'accès", "password", "password", "••••••••", <Lock size={18}/>, view === 'register' ? "new-password" : "current-password")}
+
+          {/* AFFICHAGE DU QR CODE 2FA */}
+          {view === 'setup-2fa' && qrCode && (
+            <div className="flex flex-col items-center mb-6 animate-fade-in">
+              <div className="bg-white text-black p-4 rounded-xl mb-4 shadow-[0_0_20px_rgba(0,240,255,0.2)] flex justify-center [&>svg]:w-56 [&>svg]:h-56" dangerouslySetInnerHTML={{ __html: qrCode }}></div>
+              <p className="text-sm text-[#A0A0A0] text-center mb-2">Scannez ce QR Code avec Google Authenticator ou Authy.</p>
+              {secret && (
+                <div className="text-center mb-4">
+                  <p className="text-xs text-gray-500 mb-1">Impossible de scanner ? Saisissez la clé manuellement :</p>
+                  <p className="font-mono text-cyna-cyan select-all text-sm tracking-widest">{secret}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CHAMP CODE A 6 CHIFFRES */}
+          {(view === 'setup-2fa' || view === 'verify-2fa') && (
+            <div className="mb-6 animate-fade-in">
+              <label className="block text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest mb-2">Code à 6 chiffres</label>
+              <div className="relative group">
+                <input type="text" maxLength="6" value={twoFaCode} onChange={(e) => setTwoFaCode(e.target.value.replace(/\D/g, ''))} placeholder="000000" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl pl-4 pr-12 text-white font-medium text-center tracking-[0.5em] text-xl focus:outline-none focus:border-cyna-cyan transition-all" />
+                <Smartphone size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              </div>
+            </div>
+          )}
 
           {/* CHECKBOX (Login Only) */}
           {view === 'login' && (
@@ -233,7 +328,7 @@ const Auth = () => {
             {loading ? (
               <><div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div> TRAITEMENT...</>
             ) : (
-              view === 'login' ? "S'AUTHENTIFIER" : view === 'register' ? "S'INSCRIRE" : "ENVOYER LE LIEN"
+            view === 'login' ? "S'AUTHENTIFIER" : view === 'register' ? "S'INSCRIRE" : view === 'forgot' ? "ENVOYER LE LIEN" : "VALIDER LE CODE"
             )}
           </button>
 
@@ -248,6 +343,12 @@ const Auth = () => {
                 Créer une instance
               </button>
             </p>
+      ) : view === 'setup-2fa' || view === 'verify-2fa' ? (
+        <p className="text-sm text-[#A0A0A0] font-medium">
+          <button type="button" onClick={() => { setView('login'); setError(null); }} className="text-white font-bold hover:text-cyna-cyan transition-colors underline decoration-cyna-cyan/30 underline-offset-4">
+            Annuler et retourner à la connexion
+          </button>
+        </p>
           ) : (
             <p className="text-sm text-[#A0A0A0] font-medium">
               Déjà équipé ?{' '}
@@ -264,5 +365,3 @@ const Auth = () => {
 };
 
 export default Auth;
-
-

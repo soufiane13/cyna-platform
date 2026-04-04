@@ -7,7 +7,11 @@ import Cart from './pages/Cart';
 import Dashboard from './pages/Dashboard';
 import AdminLayout from './components/AdminLayout'; // Import du Layout
 import AdminDashboard from './pages/admin/AdminDashboard'; // Import du Dashboard
+import AdminProducts from './pages/admin/AdminProducts'; // Import du gestionnaire de produits
+import AdminOrders from './pages/admin/AdminOrders'; // Import de la gestion des commandes
+import AdminUsers from './pages/admin/AdminUsers'; // Import du suivi utilisateur
 import Category from './pages/Category';
+import PaymentSuccess from './pages/PaymentSuccess'; // <--- IMPORT
 import ProductDetails from './pages/ProductDetails';
 import Search from './pages/Search';
 
@@ -23,6 +27,7 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/account" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} /> {/* Alias */}
+          <Route path="/payment-success" element={<PaymentSuccess />} /> {/* <--- ROUTE DE RETOUR STRIPE */}
 
           {/* 👇 LES DEUX LIGNES MAGIQUES SONT LÀ 👇 */}
           <Route path="/category/:slug" element={<Category />} />
@@ -36,9 +41,9 @@ function App() {
           {/* --- ROUTES ADMIN (Protégées) --- */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} /> {/* Vue A */}
-            <Route path="products" element={<div className="text-white">TODO: Vue B Products</div>} />
-            <Route path="orders" element={<div className="text-white">TODO: Vue B Orders</div>} />
-            <Route path="users" element={<div className="text-white">TODO: Vue B Users</div>} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="users" element={<AdminUsers />} />
           </Route>
         </Routes>
       </Router>
