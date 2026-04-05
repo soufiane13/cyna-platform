@@ -86,7 +86,10 @@ export class AuthService {
   async resetPassword(body: any) {
     const { email } = body;
     
-    const { error } = await this.supabase.auth.resetPasswordForEmail(email);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${frontendUrl}/update-password`,
+    });
 
     if (error) {
       throw new UnauthorizedException("Erreur : " + error.message);
@@ -98,13 +101,15 @@ export class AuthService {
   async updatePassword(body: any, accessToken: string) {
     const { newPassword } = body;
 
-    const userClient = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_KEY!,
-      { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
-    );
+    // 1. On vérifie le jeton fourni par le lien e-mail pour retrouver l'utilisateur
+    const { data: { user }, error: userError } = await this.supabase.auth.getUser(accessToken);
 
-    const { data, error } = await userClient.auth.updateUser({ password: newPassword });
+    if (userError || !user) {
+      throw new UnauthorizedException("Lien de réinitialisation invalide ou expiré.");
+    }
+
+    // 2. On utilise l'API Admin pour forcer le nouveau mot de passe
+    const { data, error } = await this.supabase.auth.admin.updateUserById(user.id, { password: newPassword });
 
     if (error) {
       throw new UnauthorizedException('La mise à jour du mot de passe a échoué : ' + error.message);
@@ -204,17 +209,24 @@ export class AuthService {
   // MISE À JOUR DU PROFIL (UTILISATEUR & ADMIN)
   // ==========================================
   async updateProfile(userId: string, body: any) {
-    const { fullName, phone, address, company } = body;
+    const { fullName, phone, address, company, password } = body;
     
-    // On utilise l'API admin de Supabase pour mettre à jour les métadonnées
-    const { data, error } = await this.supabase.auth.admin.updateUserById(userId, {
+    const updatePayload: any = {
       user_metadata: {
         full_name: fullName,
         phone,
         address,
         company
       }
-    });
+    };
+
+    // Si l'utilisateur souhaite modifier son mot de passe
+    if (password && password.trim() !== '') {
+      updatePayload.password = password;
+    }
+
+    // On utilise l'API admin de Supabase pour mettre à jour les métadonnées
+    const { data, error } = await this.supabase.auth.admin.updateUserById(userId, updatePayload);
 
     if (error) {
       console.error("❌ ERREUR SUPABASE (Mise à jour Profil) :", error);

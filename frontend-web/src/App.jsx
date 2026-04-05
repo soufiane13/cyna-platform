@@ -14,6 +14,8 @@ import Category from './pages/Category';
 import PaymentSuccess from './pages/PaymentSuccess'; // <--- IMPORT
 import ProductDetails from './pages/ProductDetails';
 import Search from './pages/Search';
+import SiteNotice from './components/SiteNotice'; // <--- IMPORT DU NOUVEAU COMPOSANT
+import UpdatePassword from './pages/UpdatePassword'; // <--- IMPORT DE LA PAGE DE MOT DE PASSE
 
 function App() {
   return (
@@ -21,6 +23,10 @@ function App() {
     <CartProvider>
       <Router>
         <Navbar />
+        
+        {/* Bannière d'information (Globale) */}
+        <SiteNotice />
+        
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -28,6 +34,7 @@ function App() {
           <Route path="/account" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} /> {/* Alias */}
           <Route path="/payment-success" element={<PaymentSuccess />} /> {/* <--- ROUTE DE RETOUR STRIPE */}
+          <Route path="/update-password" element={<UpdatePassword />} /> {/* <--- ROUTE DE MOT DE PASSE OUBLIÉ */}
 
           {/* 👇 LES DEUX LIGNES MAGIQUES SONT LÀ 👇 */}
           <Route path="/category/:slug" element={<Category />} />

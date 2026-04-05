@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Shield, CreditCard, MapPin, Clock, LogOut,
-  FileText, Edit2, Trash2, Plus, Settings, Download, AlertCircle, ShieldCheck
+  FileText, Edit2, Trash2, Plus, Settings, Download, AlertCircle, ShieldCheck, Lock
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // ==========================================
 // 1. LOGIQUE BACK-END (API APPELS)
@@ -43,6 +44,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [orders, setOrders] = useState([]);
+  const { t } = useTranslation();
 
   // --- RÉCUPÉRATION SÉCURISÉE DU USER ---
   let user = null;
@@ -116,17 +118,17 @@ const Dashboard = () => {
           <div className="h-px bg-[#2D333B] w-full mb-6"></div>
 
           <nav className="space-y-2 flex-1">
-            <NavItem icon={<User size={20} />} label="Informations" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
-            <NavItem icon={<ShieldCheck size={20} />} label="Abonnements SaaS" active={activeTab === 'subs'} onClick={() => setActiveTab('subs')} />
-            <NavItem icon={<CreditCard size={20} />} label="Facturation" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
-            <NavItem icon={<Clock size={20} />} label="Historique" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+            <NavItem icon={<User size={20} />} label={t('dashboard.info')} active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
+            <NavItem icon={<ShieldCheck size={20} />} label={t('dashboard.subs')} active={activeTab === 'subs'} onClick={() => setActiveTab('subs')} />
+            <NavItem icon={<CreditCard size={20} />} label={t('dashboard.billing')} active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
+            <NavItem icon={<Clock size={20} />} label={t('dashboard.history')} active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
 
             {/* SECTION ADMIN */}
             {isAdmin && (
               <div className="pt-4 mt-4 border-t border-[#2D333B]">
                 <button onClick={() => navigate('/admin')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#F5A623] hover:bg-[#F5A623]/10 transition-colors group">
                   <Shield size={20} className="group-hover:scale-110 transition-transform" />
-                  <span className="font-bold">Accès Backoffice</span>
+                  <span className="font-bold">{t('dashboard.admin_access')}</span>
                 </button>
               </div>
             )}
@@ -134,7 +136,7 @@ const Dashboard = () => {
             <div className="pt-8 mt-8 border-t border-[#2D333B]">
               <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#FF3B3B] hover:bg-[#FF3B3B]/10 transition-colors group">
                 <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
-                <span className="font-bold">Se déconnecter</span>
+                <span className="font-bold">{t('dashboard.logout')}</span>
               </button>
             </div>
           </nav>
@@ -151,10 +153,10 @@ const Dashboard = () => {
                   : 'bg-[#1C2128] text-[#A0A0A0] border-[#2D333B] hover:text-white'
                 }`}
             >
-              {tab === 'profile' && 'Profil'}
-              {tab === 'subs' && 'Abonnements'}
-              {tab === 'billing' && 'Paiement'}
-              {tab === 'history' && 'Historique'}
+              {tab === 'profile' && t('dashboard.profile_tab')}
+              {tab === 'subs' && t('dashboard.subs_tab')}
+              {tab === 'billing' && t('dashboard.billing_tab')}
+              {tab === 'history' && t('dashboard.history_tab')}
             </button>
           ))}
           {/* BOUTON ADMIN MOBILE */}
@@ -200,14 +202,28 @@ const ProfileView = ({ user, safeName }) => {
     fullName: safeName || '',
     phone: user?.user_metadata?.phone || '',
     company: user?.user_metadata?.company || '',
-    address: user?.user_metadata?.address || ''
+    address: user?.user_metadata?.address || '',
+    password: '',
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
+  const { t } = useTranslation();
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSave = async () => {
+    // Vérification des mots de passe avant l'envoi
+    if (isChangingPwd && formData.password) {
+      if (formData.password !== formData.confirmPassword) {
+        return setMessage('❌ Erreur: Les mots de passe ne correspondent pas.');
+      }
+      if (formData.password.length < 8) {
+        return setMessage('❌ Erreur: Le mot de passe doit contenir au moins 8 caractères.');
+      }
+    }
+
     setLoading(true);
     setMessage('');
     try {
@@ -223,6 +239,9 @@ const ProfileView = ({ user, safeName }) => {
         const currentUserData = JSON.parse(localStorage.getItem('user'));
         localStorage.setItem('user', JSON.stringify({ ...currentUserData, user_metadata: updatedUser.user_metadata }));
         setMessage('✅ Informations mises à jour avec succès !');
+        
+        setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+        setIsChangingPwd(false); // On referme la section mot de passe
       } else {
         const errData = await res.json();
         setMessage(`❌ Erreur: ${errData.message || 'Impossible de sauvegarder'}`);
@@ -236,7 +255,7 @@ const ProfileView = ({ user, safeName }) => {
 
   return (
     <div className="bg-[#1C2128] rounded-[24px] p-6 md:p-10 border border-[#2D333B] shadow-2xl">
-      <h2 className="text-2xl lg:text-3xl font-black text-white mb-8">Informations Personnelles</h2>
+      <h2 className="text-2xl lg:text-3xl font-black text-white mb-8">{t('dashboard.personal_info')}</h2>
 
       {message && (
         <div className={`p-4 mb-8 rounded-xl text-sm font-bold animate-fade-in ${message.startsWith('✅') ? 'bg-[#00FF94]/10 border border-[#00FF94]/30 text-[#00FF94]' : 'bg-[#FF3B3B]/10 border border-[#FF3B3B]/30 text-[#FF3B3B]'}`}>
@@ -246,33 +265,47 @@ const ProfileView = ({ user, safeName }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-3">
-          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Nom Complet (Contact Légal)</label>
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">{t('dashboard.full_name')}</label>
           <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
         </div>
         <div className="space-y-3">
-          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Adresse Email</label>
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">{t('dashboard.email')}</label>
           <input type="email" defaultValue={user.email} disabled className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-gray-500 font-medium cursor-not-allowed opacity-70" />
         </div>
         <div className="space-y-3">
-          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Numéro de Téléphone</label>
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">{t('dashboard.phone')}</label>
           <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+33 6 00 00 00 00" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
         </div>
         <div className="space-y-3">
-          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Entreprise / Organisation</label>
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">{t('dashboard.company')}</label>
           <input type="text" name="company" value={formData.company} onChange={handleChange} placeholder="Nom de l'entreprise" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
         </div>
         <div className="space-y-3 md:col-span-2">
-          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">Adresse Postale / Facturation</label>
+          <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">{t('dashboard.address')}</label>
           <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="123 Avenue de la Cybersécurité, 75000 Paris" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
         </div>
       </div>
 
+      {/* SECTION MOT DE PASSE (Déployable) */}
+      {isChangingPwd && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 pt-6 border-t border-white/5 animate-fade-in">
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">{t('dashboard.new_password')}</label>
+            <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
+          </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest">{t('dashboard.confirm_password')}</label>
+            <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" className="w-full h-[52px] bg-[#0B0E14] border border-[#2D333B] rounded-xl px-4 text-white font-medium focus:border-cyna-cyan focus:outline-none transition-colors" />
+          </div>
+        </div>
+      )}
+
       <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <button onClick={handleSave} disabled={loading} className="w-full md:w-auto bg-cyna-cyan text-[#0B0E14] font-black px-8 py-4 rounded-xl hover:bg-white transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)] flex items-center justify-center">
-          {loading ? <span className="animate-pulse">SAUVEGARDE EN COURS...</span> : 'ENREGISTRER LES MODIFICATIONS'}
+          {loading ? <span className="animate-pulse">{t('dashboard.saving')}</span> : t('dashboard.save_changes')}
         </button>
-        <button className="w-full md:w-auto bg-white/5 border border-white/10 text-white font-bold px-6 py-4 rounded-xl hover:bg-white/10 transition-colors">
-          Modifier le mot de passe
+        <button onClick={() => setIsChangingPwd(!isChangingPwd)} type="button" className={`w-full md:w-auto border font-bold px-6 py-4 rounded-xl transition-colors ${isChangingPwd ? 'bg-[#FF3B3B]/10 text-[#FF3B3B] border-[#FF3B3B]/30 hover:bg-[#FF3B3B]/20' : 'bg-white/5 text-white border-white/10 hover:bg-white/10'}`}>
+          {isChangingPwd ? t('dashboard.cancel_pwd_change') : t('dashboard.change_pwd')}
         </button>
       </div>
     </div>
@@ -311,73 +344,130 @@ const SubscriptionsView = ({ orders }) => {
       <h2 className="text-2xl lg:text-3xl font-black text-white">Mes Abonnements SaaS</h2>
       
       <div className="space-y-4">
-        {activeSubs.map((sub, idx) => {
-          const productName = sub.products?.name || sub.products?.nom || "Service Cyber";
-          const isYearly = sub.selected_plan === 'yearly';
-          
-          // Calcul dynamique du prochain cycle de facturation
-          const nextDate = new Date(sub.order_date);
-          if (isYearly) nextDate.setFullYear(nextDate.getFullYear() + 1);
-          else nextDate.setMonth(nextDate.getMonth() + 1);
-
-          return (
-            <div key={idx} className="bg-[#1C2128] rounded-[24px] p-6 md:p-8 border border-[#2D333B] relative overflow-hidden group hover:border-cyna-cyan/30 transition-colors">
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00FF94]"></div>
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-xl md:text-2xl font-black text-white">{productName}</h3>
-                    <span className="px-3 py-1 bg-[#00FF94]/10 text-[#00FF94] text-[10px] uppercase tracking-widest font-black rounded-md border border-[#00FF94]/20 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#00FF94] animate-pulse"></span> ACTIF
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-[#A0A0A0] font-medium">
-                    <p>Facturation : <span className="text-white">{isYearly ? 'Annuelle' : 'Mensuelle'}</span></p>
-                    <p className="hidden sm:block">•</p>
-                    <p>Prochain cycle : <span className="text-white">{nextDate.toLocaleDateString()}</span></p>
-                    <p className="hidden sm:block">•</p>
-                    <p>Licences : <span className="text-white">{sub.quantity} poste{sub.quantity > 1 ? 's' : ''}</span></p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 w-full lg:w-auto mt-4 lg:mt-0 pt-4 lg:pt-0 border-t border-white/5 lg:border-none">
-                  <button className="flex-1 lg:flex-none px-6 py-3 border border-cyna-cyan text-cyna-cyan font-bold rounded-xl hover:bg-cyna-cyan hover:text-[#0B0E14] transition-all text-sm uppercase tracking-wider">
-                    Gérer le plan
-                  </button>
-                  <button className="p-3 text-[#A0A0A0] hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-xl">
-                    <Settings size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {activeSubs.map((sub, idx) => (
+          <SubscriptionItem key={idx} sub={sub} />
+        ))}
       </div>
     </div>
   );
 };
 
-const BillingView = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <div className="space-y-6">
-      <h3 className="text-xl font-black text-white flex items-center gap-3">
-        <CreditCard size={24} className="text-cyna-cyan" /> Méthodes de paiement
-      </h3>
+const SubscriptionItem = ({ sub }) => {
+  const [isManaging, setIsManaging] = useState(false);
+  const [autoRenew, setAutoRenew] = useState(true);
 
-      <div className="bg-[#1C2128] p-6 rounded-[20px] border border-[#2D333B] flex items-center justify-between group">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center text-[10px] font-black text-[#0B0E14] shadow-inner">VISA</div>
-          <div className="flex flex-col">
-            <span className="text-white font-mono font-bold">**** **** **** 4242</span>
-            <span className="text-[#A0A0A0] text-xs">Expire 12/28</span>
+  const productName = sub.products?.name || sub.products?.nom || "Service Cyber";
+  const isYearly = sub.selected_plan === 'yearly';
+  
+  // Calcul dynamique du prochain cycle de facturation
+  const nextDate = new Date(sub.order_date);
+  if (isYearly) nextDate.setFullYear(nextDate.getFullYear() + 1);
+  else nextDate.setMonth(nextDate.getMonth() + 1);
+
+  return (
+    <div className="bg-[#1C2128] rounded-[24px] p-6 md:p-8 border border-[#2D333B] relative overflow-hidden group hover:border-cyna-cyan/30 transition-colors">
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${autoRenew ? 'bg-[#00FF94]' : 'bg-[#F5A623]'}`}></div>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <h3 className="text-xl md:text-2xl font-black text-white">{productName}</h3>
+            <span className={`px-3 py-1 text-[10px] uppercase tracking-widest font-black rounded-md border flex items-center gap-1.5 ${autoRenew ? 'bg-[#00FF94]/10 text-[#00FF94] border-[#00FF94]/20' : 'bg-[#F5A623]/10 text-[#F5A623] border-[#F5A623]/20'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${autoRenew ? 'bg-[#00FF94]' : 'bg-[#F5A623]'}`}></span> ACTIF
+            </span>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-[#A0A0A0] font-medium">
+            <p>Facturation : <span className="text-white">{isYearly ? 'Annuelle' : 'Mensuelle'}</span></p>
+            <p className="hidden sm:block">•</p>
+            <p>Prochain cycle : <span className="text-white">{nextDate.toLocaleDateString()}</span></p>
+            <p className="hidden sm:block">•</p>
+            <p>Licences : <span className="text-white">{sub.quantity} poste{sub.quantity > 1 ? 's' : ''}</span></p>
           </div>
         </div>
-        <button className="text-[#A0A0A0] hover:text-[#FF3B3B] transition-colors p-2 bg-white/5 rounded-lg"><Trash2 size={18} /></button>
+        <div className="flex items-center gap-4 w-full lg:w-auto mt-4 lg:mt-0 pt-4 lg:pt-0 border-t border-white/5 lg:border-none">
+          <button onClick={() => setIsManaging(!isManaging)} className={`flex-1 lg:flex-none px-6 py-3 border font-bold rounded-xl transition-all text-sm uppercase tracking-wider ${isManaging ? 'bg-white/10 text-white border-transparent' : 'border-cyna-cyan text-cyna-cyan hover:bg-cyna-cyan hover:text-[#0B0E14]'}`}>
+            {isManaging ? 'Fermer' : 'Gérer le plan'}
+          </button>
+        </div>
       </div>
 
-      <button className="w-full py-5 border-2 border-dashed border-[#2D333B] rounded-[20px] text-[#A0A0A0] hover:text-cyna-cyan hover:border-cyna-cyan hover:bg-cyna-cyan/5 transition-all flex items-center justify-center gap-2 font-bold">
-        <Plus size={20} /> Ajouter une carte
-      </button>
+      {/* ZONE DE GESTION (S'affiche au clic) */}
+      {isManaging && (
+        <div className="mt-6 pt-6 border-t border-[#2D333B] animate-fade-in">
+          <h4 className="text-white font-bold mb-4">Options de l'abonnement</h4>
+          <div className="flex items-center justify-between bg-[#0B0E14] p-4 rounded-xl border border-[#2D333B]">
+            <div>
+              <p className="text-white font-bold text-sm">Renouvellement automatique</p>
+              <p className="text-[#A0A0A0] text-xs mt-1">Votre moyen de paiement sera débité automatiquement à chaque cycle.</p>
+            </div>
+            <button
+              onClick={() => setAutoRenew(!autoRenew)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoRenew ? 'bg-cyna-cyan' : 'bg-gray-600'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoRenew ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          {!autoRenew && (
+            <p className="text-[#F5A623] text-xs font-bold mt-4 flex items-center gap-2">
+              <AlertCircle size={14} /> Attention : Votre service sera suspendu le {nextDate.toLocaleDateString()} si vous ne renouvelez pas manuellement.
+            </p>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+const BillingView = () => {
+  const [cards, setCards] = useState([
+    { id: 1, brand: 'VISA', last4: '4242', exp: '12/28' }
+  ]);
+  const [isAddingCard, setIsAddingCard] = useState(false);
+
+  const handleAddCardMock = () => {
+    alert("En production, cette action redirigera vers le portail sécurisé Stripe (SetupIntent) pour enregistrer la carte sans que les données ne passent par votre serveur.");
+    setCards([...cards, { id: Date.now(), brand: 'MASTERCARD', last4: '5555', exp: '09/29' }]);
+    setIsAddingCard(false);
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="space-y-6">
+        <h3 className="text-xl font-black text-white flex items-center gap-3">
+          <CreditCard size={24} className="text-cyna-cyan" /> Méthodes de paiement
+        </h3>
+
+        {cards.map(card => (
+          <div key={card.id} className="bg-[#1C2128] p-6 rounded-[20px] border border-[#2D333B] flex items-center justify-between group hover:border-cyna-cyan/30 transition-colors">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center text-[10px] font-black text-[#0B0E14] shadow-inner">{card.brand}</div>
+              <div className="flex flex-col">
+                <span className="text-white font-mono font-bold">**** **** **** {card.last4}</span>
+                <span className="text-[#A0A0A0] text-xs">Expire {card.exp}</span>
+              </div>
+            </div>
+            <button onClick={() => setCards(cards.filter(c => c.id !== card.id))} className="text-[#A0A0A0] hover:text-[#FF3B3B] transition-colors p-2 bg-white/5 rounded-lg"><Trash2 size={18} /></button>
+          </div>
+        ))}
+
+        {isAddingCard ? (
+          <div className="bg-[#1C2128] p-6 rounded-[20px] border border-cyna-cyan/30 animate-fade-in space-y-4 shadow-[0_0_15px_rgba(0,240,255,0.1)]">
+             <p className="text-sm text-gray-400 font-bold mb-2 flex items-center gap-2"><Lock size={16} className="text-cyna-cyan"/> Saisie sécurisée</p>
+             <input type="text" placeholder="Numéro de carte (Simulation)" className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
+             <div className="flex gap-4">
+                <input type="text" placeholder="MM/AA" className="w-1/2 bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
+                <input type="text" placeholder="CVC" className="w-1/2 bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
+             </div>
+             <div className="flex gap-2 pt-2">
+                <button onClick={() => setIsAddingCard(false)} className="flex-1 py-3 text-white bg-white/5 hover:bg-white/10 rounded-lg font-bold transition-colors">Annuler</button>
+                <button onClick={handleAddCardMock} className="flex-1 py-3 text-[#0B0E14] bg-cyna-cyan hover:bg-white rounded-lg font-bold transition-colors shadow-lg">Enregistrer</button>
+             </div>
+          </div>
+        ) : (
+          <button onClick={() => setIsAddingCard(true)} className="w-full py-5 border-2 border-dashed border-[#2D333B] rounded-[20px] text-[#A0A0A0] hover:text-cyna-cyan hover:border-cyna-cyan hover:bg-cyna-cyan/5 transition-all flex items-center justify-center gap-2 font-bold">
+            <Plus size={20} /> Ajouter une carte
+          </button>
+        )}
+      </div>
 
     <div className="space-y-6">
       <h3 className="text-xl font-black text-white flex items-center gap-3">
@@ -401,6 +491,7 @@ const BillingView = () => (
     </div>
   </div>
 );
+};
 
 const HistoryView = ({ orders }) => {
   const getOrdersByYear = (year) => orders.filter(o => o.created_at && o.created_at.includes(year));

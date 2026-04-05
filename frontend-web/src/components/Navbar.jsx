@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, Shield, Menu, X } from 'lucide-react';
+import { Search, ShoppingCart, Shield, Menu, X, Globe } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useTranslation } from 'react-i18next';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { cartCount } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { t, i18n } = useTranslation(); // <-- Outil de traduction
+  
+  // État React pour forcer la mise à jour visuelle immédiate du bouton
+  const [currentLang, setCurrentLang] = useState(localStorage.getItem('cyna_lang') || 'fr');
+
+  const toggleLanguage = () => {
+    const newLang = currentLang === 'fr' ? 'en' : 'fr';
+    i18n.changeLanguage(newLang);
+    localStorage.setItem('cyna_lang', newLang); // <-- Sauvegarde le choix
+    setCurrentLang(newLang); // <-- Met à jour le bouton
+  };
 
   // ==========================================
   // 1. LOGIQUE BACK-END (SAFE USER RETRIEVAL)
@@ -61,18 +73,22 @@ const Navbar = () => {
         {/* === BUREAU : LIENS === */}
         <div className="hidden lg:flex items-center gap-10">
           <Link to="/" className="text-sm font-bold text-white hover:text-cyna-cyan transition-colors uppercase tracking-widest">
-            Accueil
+            {t('home')}
           </Link>
           <Link to="/category/all" className="text-sm font-bold text-gray-300 hover:text-cyna-cyan transition-colors uppercase tracking-widest">
-            Catégories
+            {t('categories')}
           </Link>
         </div>
 
         {/* === BUREAU : ACTIONS & AUTH === */}
         <div className="hidden lg:flex items-center gap-6">
+          <button onClick={toggleLanguage} className="flex items-center gap-2 text-gray-300 hover:text-cyna-cyan transition-colors font-bold text-sm uppercase tracking-widest mr-2">
+            <Globe size={20} /> {currentLang === 'fr' ? 'FR' : 'EN'}
+          </button>
+
           <Link to="/search" className="text-gray-300 hover:text-cyna-cyan transition-colors flex items-center gap-2">
             <Search size={22} />
-            <span className="text-sm font-bold uppercase tracking-widest">Recherche</span>
+            <span className="text-sm font-bold uppercase tracking-widest">{t('search')}</span>
           </Link>
 
           {/* Vrai Panier Connecté */}
@@ -92,7 +108,7 @@ const Navbar = () => {
                 <div className="flex flex-col items-end">
                   <span className="text-sm font-bold text-white leading-tight">{displayName}</span>
                   <Link to={isAdmin ? "/admin" : "/dashboard"} className="text-xs text-cyna-cyan hover:text-white transition-colors">
-                    {isAdmin ? 'Mon Espace Admin' : 'Mon Espace Client'}
+                    {isAdmin ? t('admin_space') : t('client_space')}
                   </Link>
                 </div>
                 <Link to={isAdmin ? "/admin" : "/dashboard"} className="w-10 h-10 rounded-xl bg-cyna-cyan/10 border border-cyna-cyan/30 flex items-center justify-center text-cyna-cyan font-black hover:bg-cyna-cyan hover:text-black transition-all shadow-[0_0_15px_rgba(0,240,255,0.15)] relative group">
@@ -102,7 +118,7 @@ const Navbar = () => {
               </>
             ) : (
               <Link to="/login" className="px-6 py-2.5 bg-cyna-cyan hover:bg-white text-[#0B0E14] font-black rounded-lg transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)] text-sm uppercase tracking-wider">
-                Se connecter
+                {t('login')}
               </Link>
             )}
           </div>
@@ -110,6 +126,10 @@ const Navbar = () => {
 
         {/* === MOBILE : ICONS === */}
         <div className="flex items-center gap-6 lg:hidden">
+          <button onClick={toggleLanguage} className="text-gray-300 hover:text-cyna-cyan transition-colors font-bold text-sm">
+            {currentLang === 'fr' ? 'FR' : 'EN'}
+          </button>
+
           <Link to="/cart" className="relative text-gray-300 hover:text-cyna-cyan transition-colors">
             <ShoppingCart size={24} />
             {cartCount > 0 && (
@@ -143,13 +163,13 @@ const Navbar = () => {
                 <div className="flex flex-col">
                   <span className="text-base font-bold text-white">{displayName}</span>
                   <Link to={isAdmin ? "/admin" : "/dashboard"} onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-bold text-cyna-cyan">
-                    {isAdmin ? 'Mon Espace Admin' : 'Mon Espace Client'}
+                    {isAdmin ? t('admin_space') : t('client_space')}
                   </Link>
                 </div>
               </>
             ) : (
               <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full text-center px-6 py-3 bg-cyna-cyan text-[#0B0E14] font-black rounded-lg text-sm uppercase tracking-wider">
-                Se connecter
+                {t('login')}
               </Link>
             )}
           </div>
@@ -160,8 +180,8 @@ const Navbar = () => {
           </div>
 
           <div className="flex flex-col gap-6">
-            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-bold text-white uppercase tracking-widest hover:text-cyna-cyan">Accueil</Link>
-            <Link to="/category/all" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-bold text-gray-300 uppercase tracking-widest hover:text-cyna-cyan">Catégories</Link>
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-bold text-white uppercase tracking-widest hover:text-cyna-cyan">{t('home')}</Link>
+            <Link to="/category/all" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-bold text-gray-300 uppercase tracking-widest hover:text-cyna-cyan">{t('categories')}</Link>
           </div>
         </div>
       )}

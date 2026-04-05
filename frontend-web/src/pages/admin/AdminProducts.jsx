@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, ArrowUpDown, X, Save, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, ArrowUpDown, X, Save, Upload, AlertCircle } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const AdminProducts = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('all');
     
     // Gestion du tri (Sorting)
-    const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState({ key: 'category', direction: 'asc' }); // Tri par catégorie par défaut
 
     // Gestion de la modale (Ajout / Édition)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [formData, setFormData] = useState({ name: '', description: '', price: 0, category: 'SOC', stock_virtuel: 100, image_url: '' });
+    const [formData, setFormData] = useState({ name: '', description: '', price: 0, category: 'EDR', stock_virtuel: 100, image_url: '' });
+
+    const fileInputRef = useRef(null);
 
     // 1. Charger les produits au montage
     useEffect(() => {
@@ -42,7 +46,11 @@ const AdminProducts = () => {
     };
 
     const getSortedProducts = () => {
-        let filterData = products.filter(p => (p.name || p.nom || '').toLowerCase().includes(searchTerm.toLowerCase()));
+        let filterData = products.filter(p => {
+            const matchSearch = (p.name || p.nom || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchCat = categoryFilter === 'all' || (p.category || p.categorie || 'EDR').toUpperCase() === categoryFilter.toUpperCase();
+            return matchSearch && matchCat;
+        });
         
         return filterData.sort((a, b) => {
             let valA = a[sortConfig.key];
@@ -75,13 +83,13 @@ const AdminProducts = () => {
                 name: product.name || product.nom || '',
                 description: product.description || '',
                 price: product.price || product.prix || 0,
-                category: product.category || 'SOC',
+            category: product.category || 'EDR',
                 stock_virtuel: product.stock_virtuel !== undefined ? product.stock_virtuel : 100,
                 image_url: product.image_url || ''
             });
         } else {
             setEditingProduct(null);
-            setFormData({ name: '', description: '', price: 0, category: 'SOC', stock_virtuel: 100, image_url: '' });
+        setFormData({ name: '', description: '', price: 0, category: 'EDR', stock_virtuel: 100, image_url: '' });
         }
         setIsModalOpen(true);
     };
@@ -93,9 +101,12 @@ const AdminProducts = () => {
 
         // Formatage pour correspondre exactement aux colonnes de Supabase (nom, prix)
         const payload = {
+            name: formData.name,
             nom: formData.name,
             description: formData.description,
             prix: formData.price,
+            price_monthly: formData.price,
+            price_yearly: formData.price * 12 * 0.8,
             category: formData.category,
             stock_virtuel: formData.stock_virtuel,
             image_url: formData.image_url
@@ -137,30 +148,91 @@ const AdminProducts = () => {
         }
     };
 
+    // 4. Importation Excel
+    const handleImportExcel = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+
+                // Formatage intelligent pour correspondre à Supabase peu importe les noms de colonnes
+                const payload = data.map(row => ({
+                    name: row.nom || row.name || row.Nom || 'Service sans nom',
+                    nom: row.nom || row.name || row.Nom || 'Service sans nom',
+                    description: row.description || row.Description || '',
+                    prix: parseFloat(row.prix || row.price || row.Prix || 0),
+                    price_monthly: parseFloat(row.prix || row.price || row.Prix || 0),
+                    price_yearly: parseFloat(row.prix || row.price || row.Prix || 0) * 12 * 0.8,
+                category: row.category || row.categorie || row.Catégorie || 'EDR',
+                    stock_virtuel: parseInt(row.stock || row.stock_virtuel || row.Stock || 100),
+                    image_url: row.image_url || row.image || ''
+                }));
+
+                const res = await fetch('http://localhost:3000/products/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) { alert(`✅ ${payload.length} services importés avec succès !`); loadProducts(); } 
+                else { const errData = await res.json(); alert(`❌ Erreur: ${errData.message}`); }
+            } catch (err) {
+                alert("❌ Erreur lors de la lecture du fichier Excel.");
+            }
+        };
+        reader.readAsBinaryString(file);
+        e.target.value = null; // Réinitialise l'input
+    };
+
     return (
-        <div className="p-8 min-h-screen bg-[#0B0E14] text-white animate-fade-in relative">
+        <div className="p-8 pt-[100px] lg:pt-[120px] min-h-screen bg-[#0B0E14] text-white animate-fade-in relative">
             
             <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight text-white mb-1">Catalogue Services</h1>
                     <p className="text-gray-400 text-sm">Gérez les abonnements et solutions proposés par Cyna.</p>
                 </div>
-                <button onClick={() => openModal()} className="bg-cyna-cyan text-black font-bold px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-[#00D1E1] transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-                    <Plus size={18} /> Ajouter un service
-                </button>
+                <div className="flex gap-3 w-full md:w-auto">
+                    <input type="file" accept=".xlsx, .xls, .csv" hidden ref={fileInputRef} onChange={handleImportExcel} />
+                    <button onClick={() => fileInputRef.current.click()} className="bg-[#1C2128] border border-[#2D333B] text-white font-bold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-white/5 transition-all flex-1 md:flex-none">
+                        <Upload size={18} /> Importer Excel
+                    </button>
+                    <button onClick={() => openModal()} className="bg-cyna-cyan text-black font-bold px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-[#00D1E1] transition-all shadow-[0_0_15px_rgba(0,240,255,0.2)] flex-1 md:flex-none">
+                        <Plus size={18} /> Ajouter un service
+                    </button>
+                </div>
             </header>
 
             {/* Barre d'outils (Recherche) */}
             <div className="bg-[#1C2128] border border-[#2D333B] p-4 rounded-t-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="relative w-full sm:w-[300px]">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input 
-                        type="text" 
-                        placeholder="Rechercher un service..." 
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg h-10 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-cyna-cyan transition-colors"
-                    />
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-[300px]">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                        <input 
+                            type="text" 
+                            placeholder="Rechercher un service..." 
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg h-10 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-cyna-cyan transition-colors"
+                        />
+                    </div>
+                    <select 
+                        value={categoryFilter} 
+                        onChange={e => setCategoryFilter(e.target.value)} 
+                        className="w-full sm:w-auto bg-[#0B0E14] border border-[#2D333B] text-white text-sm rounded-lg h-10 px-4 focus:outline-none focus:border-cyna-cyan cursor-pointer transition-colors"
+                    >
+                        <option value="all">Toutes les catégories</option>
+                        <option value="EDR">Catégorie : EDR</option>
+                        <option value="XDR">Catégorie : XDR</option>
+                        <option value="SOC">Catégorie : SOC</option>
+                    </select>
                 </div>
                 <div className="text-xs text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-3 py-1.5 rounded-md border border-white/5">
                     Total : {getSortedProducts().length}
@@ -237,7 +309,18 @@ const AdminProducts = () => {
                             <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Description (Affichée sur la page détail)</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan min-h-[100px]" required /></div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Prix Mensuel (€)</label><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-cyna-cyan font-mono focus:outline-none focus:border-cyna-cyan" required /></div>
-                                <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Catégorie</label><select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan appearance-none"><option value="SOC">SOC</option><option value="EDR">EDR</option><option value="XDR">XDR</option><option value="AUDIT">AUDIT & PENTEST</option></select></div>
+                            <div>
+                                <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Catégorie / Service</label>
+                                <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan appearance-none">
+                                    <optgroup label="CAT. 1 : DÉTECTION & RÉPONSE">
+                                        <option value="EDR">EDR (Endpoint Detection)</option>
+                                        <option value="XDR">XDR (Extended Detection)</option>
+                                    </optgroup>
+                                    <optgroup label="CAT. 2 : OPÉRATIONS">
+                                        <option value="SOC">SOC (Security Operations)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Stock Virtuel (0 = Épuisé)</label><input type="number" value={formData.stock_virtuel} onChange={e => setFormData({...formData, stock_virtuel: parseInt(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" /></div>

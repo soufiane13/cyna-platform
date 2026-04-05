@@ -171,7 +171,7 @@ const Auth = () => {
           autoComplete={autoComplete}
           type={name === 'password' && showPassword ? 'text' : type}
           name={name}
-          value={formData[name]}
+          value={formData[name] || ''}
           onChange={handleChange}
           placeholder={placeholder}
           className={`

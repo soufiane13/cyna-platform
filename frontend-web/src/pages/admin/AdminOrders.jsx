@@ -5,6 +5,7 @@ const AdminOrders = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
     useEffect(() => {
@@ -51,7 +52,10 @@ const AdminOrders = () => {
     };
 
     const getSortedOrders = () => {
-        let filterData = orders.filter(o => o.id.toLowerCase().includes(searchTerm.toLowerCase()) || (o.user_id && o.user_id.toLowerCase().includes(searchTerm.toLowerCase())));
+        let filterData = orders.filter(o => 
+            (statusFilter === 'all' || o.status === statusFilter || (statusFilter === 'paid' && o.status === 'completed')) &&
+            (o.id.toLowerCase().includes(searchTerm.toLowerCase()) || (o.user_id && o.user_id.toLowerCase().includes(searchTerm.toLowerCase())))
+        );
         
         return filterData.sort((a, b) => {
             let valA = sortConfig.key === 'total' ? parseFloat(a.total_amount || a.total || 0) : a[sortConfig.key];
@@ -75,7 +79,23 @@ const AdminOrders = () => {
     return (
         <div className="p-8 min-h-screen bg-[#0B0E14] text-white animate-fade-in relative">
             <header className="mb-10"><h1 className="text-3xl font-black tracking-tight text-white mb-1">Gestion des Commandes</h1><p className="text-gray-400 text-sm">Validez les paiements et suivez les ventes.</p></header>
-            <div className="bg-[#1C2128] border border-[#2D333B] p-4 rounded-t-2xl flex items-center justify-between gap-4"><div className="relative w-full sm:w-[300px]"><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" /><input type="text" placeholder="Rechercher par ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg h-10 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-cyna-cyan" /></div><div className="text-xs text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-3 py-1.5 rounded-md border border-white/5">Total : {getSortedOrders().length}</div></div>
+            
+            <div className="bg-[#1C2128] border border-[#2D333B] p-4 rounded-t-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-[300px]"><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" /><input type="text" placeholder="Rechercher par ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg h-10 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-cyna-cyan" /></div>
+                    <select 
+                        value={statusFilter} 
+                        onChange={e => setStatusFilter(e.target.value)} 
+                        className="w-full sm:w-auto bg-[#0B0E14] border border-[#2D333B] text-white text-sm rounded-lg h-10 px-4 focus:outline-none focus:border-cyna-cyan cursor-pointer"
+                    >
+                        <option value="all">Tous les statuts</option>
+                        <option value="paid">Payé / Complété</option>
+                        <option value="pending">En attente</option>
+                        <option value="cancelled">Annulé</option>
+                    </select>
+                </div>
+                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-3 py-1.5 rounded-md border border-white/5">Total : {getSortedOrders().length}</div>
+            </div>
             <div className="overflow-x-auto bg-[#1C2128] border border-t-0 border-[#2D333B] rounded-b-2xl shadow-lg">
                 <table className="w-full text-left border-collapse">
                     <thead>

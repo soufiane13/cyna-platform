@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Megaphone, Save, Users, ShoppingCart, DollarSign, Activity, TrendingUp, Image, Star, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Megaphone, Save, Users, ShoppingCart, DollarSign, Activity, TrendingUp, Image, Star, Plus, Trash2, ArrowUp, ArrowDown, AlertTriangle, BarChart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
     // État pour le texte de l'alerte
@@ -17,8 +18,10 @@ const AdminDashboard = () => {
     ]);
 
     // Stats & Activités dynamiques
-    const [stats, setStats] = useState({ users: 1, orders: 0, revenue: 0 });
+    const [stats, setStats] = useState({ users: 1, orders: 0, revenue: 0, lastMonthRevenue: 0 });
     const [recentActivity, setRecentActivity] = useState([]);
+    const [outOfStock, setOutOfStock] = useState([]);
+    const [topSelling, setTopSelling] = useState([]);
 
     // Charger le carrousel au démarrage
     useEffect(() => {
@@ -30,14 +33,47 @@ const AdminDashboard = () => {
             })
             .catch(err => console.error("Erreur chargement carrousel", err));
 
+        // Charger les produits pour détecter les ruptures de stock
+        fetch('http://localhost:3000/products')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => {
+                setOutOfStock(data.filter(p => p.stock_virtuel <= 0));
+            })
+            .catch(err => console.error("Erreur chargement alertes stock", err));
+
         // Charger les commandes pour les KPI et l'activité récente
         fetch('http://localhost:3000/orders')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
-                const totalRevenue = data.reduce((sum, o) => sum + Number(o.total_amount || o.total || 0), 0);
-                setStats(prev => ({ ...prev, orders: data.length, revenue: totalRevenue }));
-                // Les 5 commandes les plus récentes
+                // 1. Calcul du revenu (Mois en cours vs Mois précédent)
+                const currentMonth = new Date().getMonth();
+                const currentYear = new Date().getFullYear();
+                const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+                const validOrders = data.filter(o => o.status === 'paid' || o.status === 'completed');
+                
+                const monthlyOrders = validOrders.filter(o => new Date(o.created_at).getMonth() === currentMonth && new Date(o.created_at).getFullYear() === currentYear);
+                const monthlyRevenue = monthlyOrders.reduce((sum, o) => sum + Number(o.total_amount || o.total || 0), 0);
+                
+                const lastMonthlyOrders = validOrders.filter(o => new Date(o.created_at).getMonth() === lastMonth && new Date(o.created_at).getFullYear() === lastMonthYear);
+                const lastMonthRevenue = lastMonthlyOrders.reduce((sum, o) => sum + Number(o.total_amount || o.total || 0), 0);
+                
+                setStats(prev => ({ ...prev, orders: data.length, revenue: monthlyRevenue, lastMonthRevenue }));
                 setRecentActivity(data.slice(0, 5));
+
+                // 2. Rapport de Performance (Top Produits générateurs de revenus)
+                const productSales = {};
+                validOrders.forEach(order => {
+                    (order.order_items || []).forEach(item => {
+                        const pName = item.products?.name || item.products?.nom || 'Service Inconnu';
+                        if (!productSales[pName]) productSales[pName] = { count: 0, revenue: 0 };
+                        productSales[pName].count += item.quantity;
+                        productSales[pName].revenue += (item.quantity * Number(item.price_at_purchase || 0));
+                    });
+                });
+                const sortedTop = Object.entries(productSales).map(([name, s]) => ({ name, ...s })).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+                setTopSelling(sortedTop);
             })
             .catch(err => console.error("Erreur chargement commandes pour stats", err));
     }, []);
@@ -100,6 +136,14 @@ const AdminDashboard = () => {
         setTopProducts(newItems);
     };
 
+    // Calcul de la tendance des ventes
+    let revenueTrendText = "+0%";
+    if (stats.lastMonthRevenue === 0 && stats.revenue > 0) revenueTrendText = "+100%";
+    else if (stats.lastMonthRevenue > 0) {
+        const diff = ((stats.revenue - stats.lastMonthRevenue) / stats.lastMonthRevenue) * 100;
+        revenueTrendText = (diff > 0 ? '+' : '') + diff.toFixed(1) + '%';
+    }
+
     return (
         <div className="p-8 min-h-screen bg-[#0B0E14] text-white animate-fade-in">
             <header className="mb-10 flex justify-between items-center">
@@ -111,6 +155,24 @@ const AdminDashboard = () => {
                     Admin Connecté
                 </div>
             </header>
+
+            {/* --- 0. ALERTE CRITIQUE : RUPTURE DE STOCK --- */}
+            {outOfStock.length > 0 && (
+                <div className="mb-8 p-5 bg-[#FF3B3B]/10 border border-[#FF3B3B]/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg animate-fade-in">
+                    <div className="flex items-center gap-4 text-[#FF3B3B]">
+                        <div className="p-3 bg-[#FF3B3B]/20 rounded-xl flex-shrink-0">
+                            <AlertTriangle size={24} />
+                        </div>
+                        <div>
+                            <h4 className="font-black text-lg">Alerte : Rupture de stock détectée</h4>
+                            <p className="text-sm font-medium opacity-80">{outOfStock.length} service(s) nécessite(nt) votre attention et n'est/ne sont plus disponible(s) à la vente.</p>
+                        </div>
+                    </div>
+                    <Link to="/admin/products" className="whitespace-nowrap px-6 py-3 bg-[#FF3B3B] text-white font-black rounded-xl text-sm hover:bg-red-600 transition-colors shadow-[0_0_15px_rgba(255,59,59,0.3)]">
+                        Gérer les stocks
+                    </Link>
+                </div>
+            )}
 
             {/* --- 1. WIDGET DE GESTION DE L'ALERTE (NOUVEAU) --- */}
             <section className="mb-12">
@@ -217,7 +279,7 @@ const AdminDashboard = () => {
                     icon={<DollarSign size={24} />} 
                     title="Revenu Mensuel" 
                     value={`${stats.revenue.toFixed(2)} €`} 
-                    trend="+24%" 
+                    trend={revenueTrendText} 
                     color="text-cyna-cyan"
                 />
                 <StatCard 
@@ -229,33 +291,67 @@ const AdminDashboard = () => {
                 />
             </section>
 
-            {/* --- 3. ACTIVITÉ RÉCENTE (Exemple visuel) --- */}
-            <section className="bg-[#1C2128] border border-white/10 rounded-2xl p-6">
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <TrendingUp size={20} className="text-cyna-cyan" />
-                    Activité Récente
-                </h3>
-                <div className="space-y-4">
-                    {recentActivity.length === 0 ? (
-                        <p className="text-gray-500 text-sm">Aucune activité récente.</p>
-                    ) : (
-                        recentActivity.map((order) => (
-                            <div key={order.id} className="flex items-center justify-between p-4 bg-[#0B0E14] rounded-lg border border-white/5 hover:border-white/20 transition-all cursor-pointer">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-cyna-cyan/10 flex items-center justify-center text-cyna-cyan font-bold">
-                                        <ShoppingCart size={18}/>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+                {/* --- 5. ACTIVITÉ RÉCENTE --- */}
+                <section className="bg-[#1C2128] border border-white/10 rounded-2xl p-6 shadow-lg h-full">
+                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <TrendingUp size={20} className="text-cyna-cyan" />
+                        Activité Récente
+                    </h3>
+                    <div className="space-y-4">
+                        {recentActivity.length === 0 ? (
+                            <p className="text-gray-500 text-sm">Aucune activité récente.</p>
+                        ) : (
+                            recentActivity.map((order) => (
+                                <div key={order.id} className="flex items-center justify-between p-4 bg-[#0B0E14] rounded-lg border border-white/5 hover:border-white/20 transition-all cursor-pointer">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-cyna-cyan/10 flex items-center justify-center text-cyna-cyan font-bold flex-shrink-0">
+                                            <ShoppingCart size={18}/>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-white text-sm">Nouvelle commande #{order.id.substring(0,6)}</h4>
+                                            <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleString()}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-white text-sm">Nouvelle commande #{order.id.substring(0,6)}</h4>
-                                        <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleString()}</p>
-                                    </div>
+                                    <span className="text-cyna-cyan font-bold whitespace-nowrap">+ {Number(order.total_amount || order.total || 0).toFixed(2)} €</span>
                                 </div>
-                                <span className="text-cyna-cyan font-bold">+ {Number(order.total_amount || order.total || 0).toFixed(2)} €</span>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </section>
+                            ))
+                        )}
+                    </div>
+                </section>
+
+                {/* --- 6. RAPPORT DE PERFORMANCE DES VENTES --- */}
+                <section className="bg-[#1C2128] border border-white/10 rounded-2xl p-6 shadow-lg h-full">
+                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <BarChart size={20} className="text-cyna-cyan" />
+                        Rapport de Performance (Top Ventes)
+                    </h3>
+                    <div className="space-y-5">
+                        {topSelling.length === 0 ? (
+                            <p className="text-gray-500 text-sm">Aucune donnée de vente validée disponible.</p>
+                        ) : (
+                            topSelling.map((prod, idx) => {
+                                const maxRev = topSelling[0].revenue;
+                                const percent = maxRev > 0 ? Math.max(5, Math.round((prod.revenue / maxRev) * 100)) : 5; // Sécurité si revenu = 0
+                                return (
+                                    <div key={idx}>
+                                        <div className="flex justify-between text-sm mb-1.5">
+                                            <span className="font-bold text-white truncate max-w-[60%]">{prod.name}</span>
+                                            <span className="text-cyna-cyan font-mono font-bold">{prod.revenue.toFixed(2)} €</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-1 h-2.5 bg-[#0B0E14] border border-white/5 rounded-full overflow-hidden">
+                                                <div className="h-full bg-cyna-cyan rounded-full shadow-[0_0_10px_rgba(0,240,255,0.5)]" style={{ width: `${percent}%` }}></div>
+                                            </div>
+                                            <span className="text-xs text-gray-500 font-bold w-14 text-right uppercase tracking-wider">{prod.count} U.</span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </section>
+            </div>
         </div>
     );
 };

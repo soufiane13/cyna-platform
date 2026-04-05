@@ -32,6 +32,18 @@ export class ProductsService {
     return { message: 'Produit créé avec succès' };
   }
 
+  // --- AJOUTER PLUSIEURS PRODUITS (EXCEL/CSV) ---
+  async createBulk(data: any[]) {
+    const { error } = await this.supabase
+      .from('products')
+      .insert(data); // Supabase accepte nativement les tableaux !
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    return { message: `${data.length} produits ajoutés avec succès` };
+  }
+
   // --- MODIFIER UN PRODUIT ---
   async update(id: string, data: any) {
     const { error } = await this.supabase
