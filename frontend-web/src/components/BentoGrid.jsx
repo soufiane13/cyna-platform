@@ -1,11 +1,10 @@
 import React from 'react';
 
 const categories = [
-  { id: 1, title: "SOC MANAGÉ", size: "large", bg: "bg-blue-900/20" },
-  { id: 2, title: "EDR SHIELD", size: "small", bg: "bg-cyan-900/20" },
-  { id: 3, title: "XDR UNIFIED", size: "small", bg: "bg-purple-900/20" },
-  { id: 4, title: "AUDIT & PENTEST", size: "small", bg: "bg-emerald-900/20" },
-  { id: 5, title: "CONSULTING", size: "small", bg: "bg-slate-800/50" },
+  { id: 1, title: "CAT. 2 : OPÉRATIONS (SOC)", size: "large", bg: "bg-blue-900/20" },
+  { id: 2, title: "DÉTECTION EDR", size: "small", bg: "bg-cyan-900/20" },
+  { id: 3, title: "RÉPONSE XDR", size: "small", bg: "bg-purple-900/20" },
+  { id: 4, title: "AUDIT & PENTEST", size: "small", bg: "bg-emerald-900/20" }
 ];
 
 const BentoGrid = () => {

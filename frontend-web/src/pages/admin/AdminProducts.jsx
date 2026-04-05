@@ -192,7 +192,7 @@ const AdminProducts = () => {
     };
 
     return (
-        <div className="p-8 pt-[100px] lg:pt-[120px] min-h-screen bg-[#0B0E14] text-white animate-fade-in relative">
+        <div className="p-8 min-h-screen bg-[#0B0E14] text-white animate-fade-in relative">
             
             <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>

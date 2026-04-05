@@ -11,9 +11,9 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white flex font-sans selection:bg-cyna-cyan selection:text-black">
+    <div className="min-h-screen pt-20 lg:pt-28 bg-[#0B0E14] text-white flex font-sans selection:bg-cyna-cyan selection:text-black">
       {/* SIDEBAR ADMIN */}
-      <aside className="w-64 bg-[#1C2128] border-r border-[#2D333B] flex flex-col">
+      <aside className="w-64 bg-[#1C2128] border-r border-[#2D333B] flex flex-col sticky top-20 lg:top-28 h-[calc(100vh-5rem)] lg:h-[calc(100vh-7rem)] overflow-y-auto">
         <div className="p-6 border-b border-[#2D333B]">
           <h2 className="text-xl font-black text-cyna-cyan tracking-widest uppercase">Backoffice</h2>
         </div>
