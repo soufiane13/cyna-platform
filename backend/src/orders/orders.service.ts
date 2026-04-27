@@ -94,7 +94,7 @@ export class OrdersService {
         product_data: {
           name: item.name || 'Produit Cyber', // Ajustez selon les données du cart
         },
-        unit_amount: Math.round(item.price * 100), // Stripe attend des centimes (ex: 10€ -> 1000)
+        unit_amount: Math.round(item.price * 1.20 * 100), // Prix TTC pour Stripe (TVA 20%)
       },
       quantity: item.quantity,
     }));
@@ -171,6 +171,17 @@ export class OrdersService {
       throw new HttpException('La facture n\'est pas encore disponible. Le paiement doit être validé.', HttpStatus.FORBIDDEN);
     }
 
+    // 1.5. Récupérer le nom et l'email de l'utilisateur depuis Supabase
+    let clientName = 'Client';
+    let clientEmail = '';
+    if (order.user_id) {
+      const { data: userData } = await this.supabase.auth.admin.getUserById(order.user_id);
+      if (userData && userData.user) {
+        clientEmail = userData.user.email || '';
+        clientName = userData.user.user_metadata?.full_name || userData.user.user_metadata?.company || 'Client';
+      }
+    }
+
     // 2. Créer un document PDF en mémoire
     const doc = new PDFDocument({ margin: 50 });
     const buffers = [];
@@ -190,7 +201,8 @@ export class OrdersService {
     // INFO CLIENT & COMMANDE
     doc.fontSize(12).text(`FACTURE N° ${order.id}`);
     doc.text(`Date : ${new Date(order.created_at).toLocaleDateString()}`);
-    doc.text(`Client ID : ${order.user_id}`); // Idéalement, on mettrait le nom/email ici
+    doc.text(`Client : ${clientName}`);
+    if (clientEmail) doc.text(`Email : ${clientEmail}`);
     doc.moveDown();
 
     // TABLEAU DES PRODUITS
@@ -216,9 +228,15 @@ export class OrdersService {
     });
 
     // TOTAL
+    const totalHT = Number(order.total_amount || order.total);
+    const montantTVA = totalHT * 0.20; // 20% de TVA
+    const totalTTC = totalHT + montantTVA;
+
     doc.moveDown();
     doc.text('------------------------------------------------------', 50, y + 20);
-    doc.fontSize(14).text(`TOTAL À PAYER : ${Number(order.total_amount || order.total).toFixed(2)} €`, 350, y + 40, { align: 'right' });
+    doc.fontSize(12).text(`Total HT : ${totalHT.toFixed(2)} €`, 350, y + 40, { align: 'right' });
+    doc.text(`TVA (20%) : ${montantTVA.toFixed(2)} €`, 350, y + 60, { align: 'right' });
+    doc.fontSize(14).text(`TOTAL TTC À PAYER : ${totalTTC.toFixed(2)} €`, 350, y + 85, { align: 'right' });
 
     // FIN
     doc.end();
