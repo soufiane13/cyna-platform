@@ -559,7 +559,7 @@ const OrderRow = ({ order }) => {
 
       <div className="flex items-center justify-between w-full md:w-auto gap-6 md:ml-auto pt-4 md:pt-0 border-t border-white/5 md:border-none">
         <div className="text-left md:text-right">
-          <p className="font-bold text-cyna-cyan font-mono text-xl">{Number(order.total).toFixed(2)} €</p>
+          <p className="font-bold text-cyna-cyan font-mono text-xl">{(Number(order.total_amount || order.total) * 1.20).toFixed(2)} € <span className="text-xs text-gray-500">TTC</span></p>
           <span className={`inline-block mt-1 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest rounded border ${isPaid ? 'bg-[#00FF94]/10 text-[#00FF94] border-[#00FF94]/30' : 'bg-gray-500/10 text-gray-400 border-gray-500/30'
             }`}>
             {isPaid ? 'Payé' : 'En attente'}

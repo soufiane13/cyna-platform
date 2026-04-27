@@ -114,7 +114,7 @@ const AdminOrders = () => {
                                 <td className="p-4 text-xs font-mono text-gray-500">#{order.id.substring(0, 8)}</td>
                                 <td className="p-4 text-sm">{new Date(order.created_at).toLocaleString()}</td>
                                 <td className="p-4 text-xs font-mono text-cyna-cyan">{order.user_id ? order.user_id.substring(0,12) + '...' : 'Inconnu'}</td>
-                                <td className="p-4 text-white font-mono font-bold">{Number(order.total_amount || order.total || 0).toFixed(2)} €</td>
+                                <td className="p-4 text-white font-mono font-bold">{(Number(order.total_amount || order.total || 0) * 1.20).toFixed(2)} € <span className="text-[10px] text-gray-500 font-sans">TTC</span></td>
                                 <td className="p-4">{getStatusBadge(order.status)}</td>
                                 <td className="p-4 text-right"><select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="bg-[#0B0E14] border border-[#2D333B] text-xs text-white rounded px-2 py-1 outline-none cursor-pointer"><option value="pending">En attente</option><option value="paid">Payé</option><option value="cancelled">Annulé</option></select></td>
                             </tr>
