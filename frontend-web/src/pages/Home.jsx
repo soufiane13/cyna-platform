@@ -19,6 +19,7 @@ const Home = () => {
       try {
         // 1. Charger les produits réels via le Service
         const productData = await fetchProducts();
+        console.log("🔍 Données des produits reçues :", productData); // Pour vérifier si le prix est bien là
         setProducts(productData);
 
         // 2. Charger le message d'alerte depuis NestJS
@@ -130,4 +131,3 @@ const Home = () => {
 };
 
 export default Home;
-

@@ -6,6 +6,9 @@ const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const isAvailable = product.stock_virtuel > 0; // Ou autre logique de stock
 
+  const nomAffiche = product.nom || product.name || "Solution CYNA";
+  const prixAffiche = parseFloat(product.prix || product.price || 0);
+
   return (
     <div className={`
       group relative w-full h-[420px] 
@@ -25,8 +28,8 @@ const ProductCard = ({ product }) => {
       {/* ZONE INFO (Bottom 40%) */}
       <div className="h-[40%] p-6 flex flex-col justify-between relative bg-cyna-steel z-10">
         <div>
-          <h3 className="text-xl font-bold text-cyna-white mb-1">{product.name}</h3>
-          <p className="text-cyna-cyan font-bold text-lg">{product.price} €</p>
+          <h3 className="text-xl font-bold text-cyna-white mb-1 truncate">{nomAffiche}</h3>
+          <p className="text-cyna-cyan font-bold text-lg">{prixAffiche.toFixed(2)} €</p>
         </div>
 
         {/* Disponibilité */}
@@ -49,7 +52,13 @@ const ProductCard = ({ product }) => {
       <div className="absolute bottom-0 left-0 w-full p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out z-20">
         <button 
           disabled={!isAvailable}
-          onClick={() => addToCart(product)}
+          onClick={() => addToCart({
+            ...product,
+            name: nomAffiche,
+            price: prixAffiche,
+            quantity: 1,
+            duration: 'monthly'
+          })}
           className="w-full bg-cyna-cyan text-cyna-navy font-bold py-3 rounded-lg shadow-neon hover:bg-white transition-colors disabled:cursor-not-allowed"
         >
           {isAvailable ? "AJOUTER AU PANIER" : "INDISPONIBLE"}
