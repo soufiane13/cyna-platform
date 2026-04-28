@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, Shield, Clock } from 'lucide-react';
+import { Search, User, Shield, Mail, X } from 'lucide-react';
 
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // States pour la messagerie
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [emailData, setEmailData] = useState({ to: '', subject: '', message: '', isCollective: false });
+    const [sendingEmail, setSendingEmail] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -56,9 +61,43 @@ const AdminUsers = () => {
         return <div className="flex flex-wrap gap-1.5">{uniqueSubs.map((sub, i) => <span key={i} className="px-2 py-1 bg-cyna-cyan/10 text-cyna-cyan text-[10px] uppercase font-bold rounded border border-cyna-cyan/20">{sub}</span>)}</div>;
     };
 
+    // === FONCTIONS D'ENVOI D'EMAIL ===
+    const openCollectiveEmail = () => {
+        setEmailData({ to: users.map(u => u.email), subject: '', message: '', isCollective: true });
+        setIsEmailModalOpen(true);
+    };
+
+    const openPersonalEmail = (email) => {
+        setEmailData({ to: email, subject: '', message: '', isCollective: false });
+        setIsEmailModalOpen(true);
+    };
+
+    const handleSendEmail = async () => {
+        setSendingEmail(true);
+        try {
+            const res = await fetch('http://localhost:3000/messages/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: emailData.to, subject: emailData.subject, message: emailData.message })
+            });
+            if (res.ok) {
+                alert('✅ Email(s) envoyé(s) avec succès !');
+                setIsEmailModalOpen(false);
+            } else {
+                alert('❌ Erreur lors de l\'envoi.');
+            }
+        } catch (e) {
+            alert('❌ Erreur réseau.');
+        }
+        setSendingEmail(false);
+    };
+
     return (
         <div className="p-8 min-h-screen bg-[#0B0E14] text-white animate-fade-in relative">
-            <header className="mb-10"><h1 className="text-3xl font-black tracking-tight text-white mb-1">Suivi des Utilisateurs</h1><p className="text-gray-400 text-sm">Analysez les inscriptions et l'engagement client.</p></header>
+            <header className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div><h1 className="text-3xl font-black tracking-tight text-white mb-1">Suivi des Utilisateurs</h1><p className="text-gray-400 text-sm">Analysez les inscriptions et l'engagement client.</p></div>
+                <button onClick={openCollectiveEmail} className="bg-cyna-cyan text-[#0B0E14] px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-white transition-colors"><Mail size={18} /> Message Collectif</button>
+            </header>
             
             {/* NOUVEAU: KPIs Utilisateurs */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -92,6 +131,7 @@ const AdminUsers = () => {
                             <th className="p-4 font-bold">Rôle</th>
                             <th className="p-4 font-bold">Date d'inscription</th>
                             <th className="p-4 font-bold">Abonnements actifs</th>
+                            <th className="p-4 font-bold text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[#2D333B]">
@@ -105,11 +145,47 @@ const AdminUsers = () => {
                                 <td className="p-4">
                                     {getUserSubscriptions(u.id)}
                                 </td>
+                                <td className="p-4 text-right">
+                                    <button onClick={() => openPersonalEmail(u.email)} className="p-2 bg-white/5 hover:bg-cyna-cyan/20 text-gray-400 hover:text-cyna-cyan rounded-lg transition-colors" title="Envoyer un email personnel">
+                                        <Mail size={16} />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+
+            {/* MODAL D'ENVOI D'EMAIL */}
+            {isEmailModalOpen && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in">
+                    <div className="bg-[#1C2128] border border-[#2D333B] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative">
+                        <div className="flex justify-between items-center p-6 border-b border-[#2D333B]">
+                            <h2 className="text-xl font-bold flex items-center gap-2"><Mail className="text-cyna-cyan" /> {emailData.isCollective ? "Message Collectif" : "Message Personnel"}</h2>
+                            <button onClick={() => setIsEmailModalOpen(false)} className="text-gray-400 hover:text-white transition-colors"><X size={24} /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Destinataire(s)</label>
+                                <div className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-gray-400 truncate">
+                                    {emailData.isCollective ? `Tous les utilisateurs (${users.length} contacts)` : emailData.to}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Sujet</label>
+                                <input type="text" value={emailData.subject} onChange={e => setEmailData({...emailData, subject: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-cyna-cyan" placeholder="Objet de l'email..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Message</label>
+                                <textarea value={emailData.message} onChange={e => setEmailData({...emailData, message: e.target.value})} className="w-full h-32 bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-cyna-cyan resize-none" placeholder="Votre message..." />
+                            </div>
+                            <button onClick={handleSendEmail} disabled={sendingEmail || !emailData.subject || !emailData.message} className="w-full bg-cyna-cyan text-[#0B0E14] font-bold py-3 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                {sendingEmail ? "Envoi en cours..." : "Envoyer le message"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

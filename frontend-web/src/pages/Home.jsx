@@ -5,6 +5,7 @@ import Hero from '../components/Hero';
 import BentoGrid from '../components/BentoGrid';
 import { ArrowRight, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import CynaChatbot from '../components/CynaChatbot';
 
 const Home = () => {
   // ==========================================
@@ -126,6 +127,7 @@ const Home = () => {
             <p className="text-sm text-gray-500 font-medium">© 2026 CYNA DEFENSE. Tous droits réservés.</p>
           </div>
       </footer>
+      <CynaChatbot />
     </div>
   );
 };
