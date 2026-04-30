@@ -10,6 +10,11 @@ export class ChatService {
     if (msg.includes('bonjour') || msg.includes('salut') || msg.includes('hello')) {
       return { reply: "Bonjour, je suis Nexus, votre assistant CYNA Defence. Comment puis-je vous aider à sécuriser votre infrastructure aujourd'hui ?", requiresSupport: false };
     }
+
+    // Règle spécifique pour le devis / Enterprise
+    if (msg.includes('enterprise') || msg.includes('devis') || msg.includes('sur mesure')) {
+      return { reply: "La solution CYNA EDR Enterprise est taillée pour les grandes infrastructures et n'est disponible que sur devis. Souhaitez-vous être mis en relation avec un expert pour évaluer vos besoins ?", requiresSupport: true };
+    }
     
     // 2. Tarifs et Prix
     if (msg.includes('prix') || msg.includes('tarif') || msg.includes('coût') || msg.includes('combien')) {

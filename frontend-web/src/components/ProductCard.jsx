@@ -1,16 +1,18 @@
 import React from 'react';
-import { Box, CheckCircle, XCircle } from 'lucide-react'; // Icônes
+import { Box, ArrowRight } from 'lucide-react'; // Icônes
 import { useCart } from '../context/CartContext';
+import { Link } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const isAvailable = product.stock_virtuel > 0; // Ou autre logique de stock
 
   const nomAffiche = product.nom || product.name || "Solution CYNA";
-  const prixAffiche = parseFloat(product.prix || product.price || 0);
+  const prixAffiche = parseFloat(product.price || product.prix || 0);
+  const requiresQuote = product.requires_quote || false;
 
   return (
-    <div className={`
+    <Link to={`/product/${product.id}`} className={`
       group relative w-full h-[420px] 
       bg-cyna-steel rounded-2xl overflow-hidden
       border border-white/5 hover:border-cyna-cyan/30
@@ -29,7 +31,11 @@ const ProductCard = ({ product }) => {
       <div className="h-[40%] p-6 flex flex-col justify-between relative bg-cyna-steel z-10">
         <div>
           <h3 className="text-xl font-bold text-cyna-white mb-1 truncate">{nomAffiche}</h3>
-          <p className="text-cyna-cyan font-bold text-lg">{prixAffiche.toFixed(2)} €</p>
+          {requiresQuote ? (
+            <p className="text-[#F5A623] font-bold text-lg">Sur Devis</p>
+          ) : (
+            <p className="text-cyna-cyan font-bold text-lg">{prixAffiche.toFixed(2)} €</p>
+          )}
         </div>
 
         {/* Disponibilité */}
@@ -50,21 +56,25 @@ const ProductCard = ({ product }) => {
 
       {/* BOUTON SLIDE UP (Masqué par défaut) */}
       <div className="absolute bottom-0 left-0 w-full p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out z-20">
-        <button 
-          disabled={!isAvailable}
-          onClick={() => addToCart({
-            ...product,
-            name: nomAffiche,
-            price: prixAffiche,
-            quantity: 1,
-            duration: 'monthly'
-          })}
-          className="w-full bg-cyna-cyan text-cyna-navy font-bold py-3 rounded-lg shadow-neon hover:bg-white transition-colors disabled:cursor-not-allowed"
-        >
-          {isAvailable ? "AJOUTER AU PANIER" : "INDISPONIBLE"}
-        </button>
+        {requiresQuote ? (
+          <div className="w-full bg-[#F5A623] text-cyna-navy font-bold py-3 rounded-lg shadow-neon flex items-center justify-center gap-2">
+            DEMANDER UN DEVIS <ArrowRight size={16} />
+          </div>
+        ) : (
+          <button 
+            disabled={!isAvailable}
+            onClick={(e) => {
+              e.preventDefault(); // Empêche la navigation du Link parent
+              e.stopPropagation(); // Empêche la propagation de l'événement
+              addToCart({ ...product, name: nomAffiche, price: prixAffiche, quantity: 1, duration: 'monthly' });
+            }}
+            className="w-full bg-cyna-cyan text-cyna-navy font-bold py-3 rounded-lg shadow-neon hover:bg-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-500"
+          >
+            {isAvailable ? "AJOUTER AU PANIER" : "INDISPONIBLE"}
+          </button>
+        )}
       </div>
-    </div>
+    </Link>
   );
 };
 
