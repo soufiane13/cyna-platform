@@ -12,18 +12,28 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cyna_cart', JSON.stringify(cart));
   }, [cart]);
 
-  // AJOUTER (+)
+  // ✅ APRÈS (correct — respecte la quantité + durée choisies)
   const addToCart = (product) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.id === product.id);
       if (existingItem) {
         return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id
+            ? {
+              ...item,
+              // On additionne la quantité déjà en panier + la nouvelle quantité choisie
+              quantity: item.quantity + (product.quantity ?? 1),
+              // On met à jour la durée si l'utilisateur en a choisi une nouvelle
+              duration: product.duration ?? item.duration,
+            }
+            : item
         );
-      } else {
-        // Par défaut : Quantité 1, Durée "Mensuel"
-        return [...prevCart, { ...product, quantity: 1, duration: 'monthly' }];
       }
+      return [...prevCart, {
+        ...product,
+        quantity: product.quantity ?? 1,
+        duration: product.duration ?? 'monthly',
+      }];
     });
   };
 
@@ -53,7 +63,7 @@ export const CartProvider = ({ children }) => {
 
   // CALCULS
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-  
+
   // Calcul total (Prix * Quantité * (12 si Annuel))
   const cartTotal = cart.reduce((total, item) => {
     const multiplier = item.duration === 'yearly' ? 12 : 1;
@@ -61,14 +71,14 @@ export const CartProvider = ({ children }) => {
   }, 0);
 
   return (
-    <CartContext.Provider value={{ 
-      cart, 
-      addToCart, 
-      updateQuantity, 
-      updateDuration, 
-      removeFromCart, 
-      cartCount, 
-      cartTotal 
+    <CartContext.Provider value={{
+      cart,
+      addToCart,
+      updateQuantity,
+      updateDuration,
+      removeFromCart,
+      cartCount,
+      cartTotal
     }}>
       {children}
     </CartContext.Provider>

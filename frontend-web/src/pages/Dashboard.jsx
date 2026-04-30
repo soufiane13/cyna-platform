@@ -150,8 +150,8 @@ const Dashboard = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`whitespace-nowrap px-5 py-3 rounded-xl text-sm font-bold border transition-all ${activeTab === tab
-                  ? 'bg-cyna-cyan/10 text-cyna-cyan border-cyna-cyan shadow-[0_0_15px_rgba(0,240,255,0.1)]'
-                  : 'bg-[#1C2128] text-[#A0A0A0] border-[#2D333B] hover:text-white'
+                ? 'bg-cyna-cyan/10 text-cyna-cyan border-cyna-cyan shadow-[0_0_15px_rgba(0,240,255,0.1)]'
+                : 'bg-[#1C2128] text-[#A0A0A0] border-[#2D333B] hover:text-white'
                 }`}
             >
               {tab === 'profile' && t('dashboard.profile_tab')}
@@ -189,8 +189,8 @@ const NavItem = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 font-bold ${active
-        ? 'bg-cyna-cyan/10 text-cyna-cyan border border-cyna-cyan/30 shadow-[0_0_10px_rgba(0,240,255,0.05)]'
-        : 'text-[#A0A0A0] hover:text-white hover:bg-white/5 border border-transparent'
+      ? 'bg-cyna-cyan/10 text-cyna-cyan border border-cyna-cyan/30 shadow-[0_0_10px_rgba(0,240,255,0.05)]'
+      : 'text-[#A0A0A0] hover:text-white hover:bg-white/5 border border-transparent'
       }`}
   >
     {icon}
@@ -233,14 +233,14 @@ const ProfileView = ({ user, safeName }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
+
       if (res.ok) {
         const updatedUser = await res.json();
         // Mettre à jour le localStorage avec les nouvelles données
         const currentUserData = JSON.parse(localStorage.getItem('user'));
         localStorage.setItem('user', JSON.stringify({ ...currentUserData, user_metadata: updatedUser.user_metadata }));
         setMessage('✅ Informations mises à jour avec succès !');
-        
+
         setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
         setIsChangingPwd(false); // On referme la section mot de passe
       } else {
@@ -316,9 +316,9 @@ const ProfileView = ({ user, safeName }) => {
 const SubscriptionsView = ({ orders }) => {
   // 1. Filtrer les commandes validées/payées
   const paidOrders = orders.filter(o => o.status === 'paid' || o.status === 'completed');
-  
+
   // 2. Extraire tous les produits de ces commandes pour en faire des abonnements actifs
-  const activeSubs = paidOrders.flatMap(order => 
+  const activeSubs = paidOrders.flatMap(order =>
     (order.order_items || []).map(item => ({
       ...item,
       order_date: order.created_at || order.date_commande
@@ -343,7 +343,7 @@ const SubscriptionsView = ({ orders }) => {
   return (
     <div className="space-y-8">
       <h2 className="text-2xl lg:text-3xl font-black text-white">Mes Abonnements SaaS</h2>
-      
+
       <div className="space-y-4">
         {activeSubs.map((sub, idx) => (
           <SubscriptionItem key={idx} sub={sub} />
@@ -359,7 +359,7 @@ const SubscriptionItem = ({ sub }) => {
 
   const productName = sub.products?.name || sub.products?.nom || "Service Cyber";
   const isYearly = sub.selected_plan === 'yearly';
-  
+
   // Calcul dynamique du prochain cycle de facturation
   const nextDate = new Date(sub.order_date);
   if (isYearly) nextDate.setFullYear(nextDate.getFullYear() + 1);
@@ -452,16 +452,16 @@ const BillingView = () => {
 
         {isAddingCard ? (
           <div className="bg-[#1C2128] p-6 rounded-[20px] border border-cyna-cyan/30 animate-fade-in space-y-4 shadow-[0_0_15px_rgba(0,240,255,0.1)]">
-             <p className="text-sm text-gray-400 font-bold mb-2 flex items-center gap-2"><Lock size={16} className="text-cyna-cyan"/> Saisie sécurisée</p>
-             <input type="text" placeholder="Numéro de carte (Simulation)" className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
-             <div className="flex gap-4">
-                <input type="text" placeholder="MM/AA" className="w-1/2 bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
-                <input type="text" placeholder="CVC" className="w-1/2 bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
-             </div>
-             <div className="flex gap-2 pt-2">
-                <button onClick={() => setIsAddingCard(false)} className="flex-1 py-3 text-white bg-white/5 hover:bg-white/10 rounded-lg font-bold transition-colors">Annuler</button>
-                <button onClick={handleAddCardMock} className="flex-1 py-3 text-[#0B0E14] bg-cyna-cyan hover:bg-white rounded-lg font-bold transition-colors shadow-lg">Enregistrer</button>
-             </div>
+            <p className="text-sm text-gray-400 font-bold mb-2 flex items-center gap-2"><Lock size={16} className="text-cyna-cyan" /> Saisie sécurisée</p>
+            <input type="text" placeholder="Numéro de carte (Simulation)" className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
+            <div className="flex gap-4">
+              <input type="text" placeholder="MM/AA" className="w-1/2 bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
+              <input type="text" placeholder="CVC" className="w-1/2 bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan" />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setIsAddingCard(false)} className="flex-1 py-3 text-white bg-white/5 hover:bg-white/10 rounded-lg font-bold transition-colors">Annuler</button>
+              <button onClick={handleAddCardMock} className="flex-1 py-3 text-[#0B0E14] bg-cyna-cyan hover:bg-white rounded-lg font-bold transition-colors shadow-lg">Enregistrer</button>
+            </div>
           </div>
         ) : (
           <button onClick={() => setIsAddingCard(true)} className="w-full py-5 border-2 border-dashed border-[#2D333B] rounded-[20px] text-[#A0A0A0] hover:text-cyna-cyan hover:border-cyna-cyan hover:bg-cyna-cyan/5 transition-all flex items-center justify-center gap-2 font-bold">
@@ -470,28 +470,15 @@ const BillingView = () => {
         )}
       </div>
 
-    <div className="space-y-6">
-      <h3 className="text-xl font-black text-white flex items-center gap-3">
-        <MapPin size={24} className="text-cyna-cyan" /> Carnet d'adresses
-      </h3>
+      <div className="space-y-6">
 
-      <div className="bg-[#1C2128] p-6 rounded-[20px] border border-[#2D333B] relative group">
-        <div className="flex items-center justify-between mb-2">
-          <p className="font-bold text-white uppercase tracking-widest text-xs">Siège Social (Par défaut)</p>
-          <div className="flex gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="p-2 bg-[#0B0E14] rounded-lg text-cyna-cyan hover:bg-white/10"><Edit2 size={14} /></button>
-            <button className="p-2 bg-[#0B0E14] rounded-lg text-[#FF3B3B] hover:bg-white/10"><Trash2 size={14} /></button>
-          </div>
-        </div>
-        <p className="text-[#A0A0A0] text-sm leading-relaxed mt-3">12 Avenue des Champs-Élysées<br />75008 Paris<br />France</p>
+
+
+
+
       </div>
-
-      <button className="w-full py-5 border-2 border-dashed border-[#2D333B] rounded-[20px] text-[#A0A0A0] hover:text-cyna-cyan hover:border-cyna-cyan hover:bg-cyna-cyan/5 transition-all flex items-center justify-center gap-2 font-bold">
-        <Plus size={20} /> Ajouter une adresse
-      </button>
     </div>
-  </div>
-);
+  );
 };
 
 const HistoryView = ({ orders }) => {
@@ -576,7 +563,7 @@ const OrderRow = ({ order }) => {
             <Download size={18} /> <span className="hidden md:inline">PDF</span>
           </button>
         ) : (
-          <span className="text-[10px] text-gray-500 italic max-w-[100px] md:max-w-none text-right leading-tight">Facture indisponible<br/>(En attente de validation)</span>
+          <span className="text-[10px] text-gray-500 italic max-w-[100px] md:max-w-none text-right leading-tight">Facture indisponible<br />(En attente de validation)</span>
         )}
       </div>
 
