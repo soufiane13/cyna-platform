@@ -1,4 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { fetchProducts } from '../services/productService';
+import ProductCard from '../components/ProductCard';
+import Hero from '../components/Hero';
+import Footer from '../components/Footer';
+import BentoGrid from '../components/BentoGrid';
+import { ArrowRight, Zap, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import CynaChatbot from '../components/CynaChatbot';
 import { Link }                        from 'react-router-dom';
 import { ArrowRight, Zap, ShieldCheck } from 'lucide-react';
 import { fetchProducts }               from '../services/productService';
@@ -121,6 +129,11 @@ const Home = () => {
           <EmptyState />
         )}
       </section>
+      
+      {/* FOOTER (Composant dédié selon cahier des charges) */}
+      <Footer />
+      
+      <CynaChatbot />
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       <footer className="bg-[#05070A] border-t border-white/10 py-12 lg:py-16">

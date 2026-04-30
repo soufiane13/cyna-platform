@@ -10,6 +10,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'; // Import du Dashboar
 import AdminProducts from './pages/admin/AdminProducts'; // Import du gestionnaire de produits
 import AdminOrders from './pages/admin/AdminOrders'; // Import de la gestion des commandes
 import AdminUsers from './pages/admin/AdminUsers'; // Import du suivi utilisateur
+import AdminMessages from './pages/admin/AdminMessages'; // Import de la messagerie
 import Category from './pages/Category';
 import PaymentSuccess from './pages/PaymentSuccess'; // <--- IMPORT
 import ProductDetails from './pages/ProductDetails';
@@ -51,6 +52,7 @@ function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="messages" element={<AdminMessages />} />
           </Route>
         </Routes>
       </Router>

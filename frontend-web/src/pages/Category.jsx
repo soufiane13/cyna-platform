@@ -134,10 +134,16 @@ const Category = () => {
                                         <h3 className="text-lg md:text-xl font-bold text-white mb-2 line-clamp-2">{nomProduit}</h3>
 
                                         <div className="mt-auto pt-6">
-                                            <p className="text-[10px] text-[#A0A0A0] font-bold tracking-widest uppercase mb-1">À PARTIR DE</p>
+                                        <p className="text-[10px] text-[#A0A0A0] font-bold tracking-widest uppercase mb-1">
+                                            {product.requires_quote ? 'TARIFICATION SUR MESURE' : 'À PARTIR DE'}
+                                        </p>
 
                                             <div className="flex items-end justify-between">
+                                            {product.requires_quote ? (
+                                                <p className="text-[#F5A623] font-bold text-2xl tracking-tight">Sur Devis</p>
+                                            ) : (
                                                 <p className="text-cyna-cyan font-mono text-2xl font-bold">{prix.toFixed(2)} €</p>
+                                            )}
                                                 <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white group-hover:text-[#0B0E14] transition-all">
                                                     <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
                                                 </div>
@@ -164,4 +170,3 @@ const Category = () => {
 };
 
 export default Category;
-

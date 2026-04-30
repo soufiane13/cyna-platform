@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Megaphone, Save, Users, ShoppingCart, DollarSign, Activity, TrendingUp, Image, Star, Plus, Trash2, ArrowUp, ArrowDown, AlertTriangle, BarChart } from 'lucide-react';
+import { Megaphone, Save, Users, ShoppingCart, DollarSign, Activity, TrendingUp, Image, Star, Plus, Trash2, ArrowUp, ArrowDown, AlertTriangle, BarChart, Tag, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -22,6 +22,11 @@ const AdminDashboard = () => {
     const [recentActivity, setRecentActivity] = useState([]);
     const [outOfStock, setOutOfStock] = useState([]);
     const [topSelling, setTopSelling] = useState([]);
+
+    // États pour les Coupons
+    const [coupons, setCoupons] = useState([]);
+    const [newCoupon, setNewCoupon] = useState({ code: '', discount: 10 });
+    const [loadingCoupons, setLoadingCoupons] = useState(false);
 
     // Charger le carrousel au démarrage
     useEffect(() => {
@@ -76,6 +81,12 @@ const AdminDashboard = () => {
                 setTopSelling(sortedTop);
             })
             .catch(err => console.error("Erreur chargement commandes pour stats", err));
+            
+        // Charger les coupons
+        fetch('http://localhost:3000/coupons')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => setCoupons(data))
+            .catch(err => console.error("Erreur chargement coupons", err));
     }, []);
 
     // Fonction pour sauvegarder l'alerte sur le serveur
@@ -126,6 +137,39 @@ const AdminDashboard = () => {
         } finally {
             setLoadingCarousel(false);
         }
+    };
+
+    // --- FONCTIONS COUPONS ---
+    const handleCreateCoupon = async () => {
+        if (!newCoupon.code || !newCoupon.discount) {
+            alert("Veuillez saisir un code et un pourcentage valides.");
+            return;
+        }
+        setLoadingCoupons(true);
+        try {
+            const res = await fetch('http://localhost:3000/coupons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: newCoupon.code.toUpperCase(), discount_percentage: newCoupon.discount })
+            });
+            if (res.ok) {
+                const created = await res.json();
+                setCoupons([created, ...coupons]);
+                setNewCoupon({ code: '', discount: 10 });
+                alert('✅ Code promo créé avec succès !');
+            } else {
+                const errData = await res.json();
+                alert(`❌ Erreur lors de la création : ${errData.message || 'Ce code promo existe peut-être déjà.'}`);
+            }
+        } catch (e) {
+            alert('Erreur réseau.');
+        } finally {
+            setLoadingCoupons(false);
+        }
+    };
+
+    const handleDeleteCoupon = async (id) => {
+        try { const res = await fetch(`http://localhost:3000/coupons/${id}`, { method: 'DELETE' }); if (res.ok) setCoupons(coupons.filter(c => c.id !== id)); } catch(e) {}
     };
 
     // --- FONCTIONS TOP PRODUITS (Ordre) ---
@@ -199,6 +243,57 @@ const AdminDashboard = () => {
                     >
                         {loading ? 'Sauvegarde...' : <><Save size={18}/> Mettre à jour</>}
                     </button>
+                </div>
+            </section>
+
+            {/* --- 1.5 WIDGET DE GESTION DES COUPONS --- */}
+            <section className="mb-12">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Tag size={20} className="text-cyna-cyan" />
+                    Codes Promo & Réductions
+                </h2>
+                
+                <div className="bg-[#1C2128] border border-white/10 p-6 rounded-2xl flex flex-col lg:flex-row gap-6 items-start lg:items-center shadow-lg">
+                    <div className="flex-1 w-full flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <label className="text-xs text-gray-400 font-bold mb-2 block uppercase">Code Promo</label>
+                            <input 
+                                type="text" 
+                                value={newCoupon.code}
+                                onChange={(e) => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase().replace(/\s/g, '')})}
+                                onKeyDown={(e) => e.key === 'Enter' && handleCreateCoupon()}
+                                placeholder="Ex: CYNA20" 
+                                className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-cyna-cyan uppercase"
+                            />
+                        </div>
+                        <div className="w-full sm:w-32">
+                            <label className="text-xs text-gray-400 font-bold mb-2 block uppercase">Réduction (%)</label>
+                            <input 
+                                type="number" 
+                                min="1" max="100"
+                                value={newCoupon.discount}
+                                onChange={(e) => setNewCoupon({...newCoupon, discount: parseInt(e.target.value) || ''})}
+                                onKeyDown={(e) => e.key === 'Enter' && handleCreateCoupon()}
+                                className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-cyna-cyan font-bold focus:outline-none focus:border-cyna-cyan"
+                            />
+                        </div>
+                        <div className="flex items-end">
+                            <button onClick={handleCreateCoupon} disabled={loadingCoupons || !newCoupon.code} className="w-full sm:w-auto h-[46px] bg-white/10 text-white font-bold px-6 rounded-lg flex items-center justify-center gap-2 hover:bg-white/20 transition-all disabled:opacity-50">
+                                {loadingCoupons ? '...' : <><Plus size={18}/> Créer</>}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="h-px w-full lg:w-px lg:h-20 bg-[#2D333B]"></div>
+
+                    <div className="flex-1 w-full overflow-y-auto max-h-32 pr-2 space-y-2 scrollbar-hide">
+                        {coupons.length === 0 ? <p className="text-gray-500 text-sm italic">Aucun code promo actif.</p> : coupons.map(c => (
+                            <div key={c.id} className="flex items-center justify-between bg-[#0B0E14] border border-[#2D333B] p-3 rounded-lg">
+                                <div><span className="text-white font-mono font-bold mr-3">{c.code}</span><span className="text-[#00FF94] text-xs font-bold bg-[#00FF94]/10 px-2 py-1 rounded">-{c.discount_percentage}%</span></div>
+                                <button onClick={() => handleDeleteCoupon(c.id)} className="text-gray-500 hover:text-[#FF3B3B] transition-colors"><Trash2 size={16}/></button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
 

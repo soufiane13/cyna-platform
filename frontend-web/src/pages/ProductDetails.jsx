@@ -1,3 +1,6 @@
+import React, { useState, useEffect } from 'react';
+import { Check, Shield, Zap, Server, Activity, ArrowRight, Loader2, AlertCircle, X } from 'lucide-react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -19,6 +22,28 @@ const ProductDetails = () => {
     const [duration, setDuration] = useState('monthly'); // ← mensuel / annuel
     const [added, setAdded] = useState(false);     // ← feedback bouton
 
+    // États pour les interactions utilisateur
+    const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' ou 'yearly'
+    const [activeImage, setActiveImage] = useState(0);
+    const [quantity, setQuantity] = useState(1);
+    const [isAdding, setIsAdding] = useState(false); // Effet visuel du bouton d'ajout
+
+    // États pour le Formulaire de Devis
+    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+    const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+    const [quoteSuccess, setQuoteSuccess] = useState(false);
+    const [quoteForm, setQuoteForm] = useState({
+        companyName: '',
+        address: '',
+        email: '',
+        phone: '',
+        contactPerson: '',
+        availability: ''
+    });
+
+    // ==========================================
+    // 2. LOGIQUE BACK-END (CHARGEMENT BDD)
+    // ==========================================
     // ── Chargement du produit depuis NestJS ──────────────────────────────────
     useEffect(() => {
         fetch('http://localhost:3000/products')
@@ -40,6 +65,50 @@ const ProductDetails = () => {
         if (!isNaN(val) && val >= 1) setQuantity(val);
     };
 
+    // ==========================================
+    // GESTION DU FORMULAIRE DE DEVIS
+    // ==========================================
+    const submitQuote = async (e) => {
+        e.preventDefault();
+        setIsSubmittingQuote(true);
+        try {
+            const messageContent = `🎯 DEMANDE DE DEVIS POUR : ${product.nom || product.name}\n\n🏢 Entreprise : ${quoteForm.companyName}\n📍 Adresse : ${quoteForm.address}\n👤 Responsable : ${quoteForm.contactPerson}\n🕒 Disponibilité : ${quoteForm.availability}`;
+            
+            // Envoi vers le endpoint des messages existant (Backend NestJS)
+            await fetch('http://localhost:3000/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userName: quoteForm.contactPerson,
+                    contactInfo: `${quoteForm.email} / ${quoteForm.phone}`,
+                    message: messageContent
+                })
+            });
+            setQuoteSuccess(true);
+            setTimeout(() => {
+                setIsQuoteModalOpen(false);
+                setQuoteSuccess(false);
+                setQuoteForm({ companyName: '', address: '', email: '', phone: '', contactPerson: '', availability: '' });
+            }, 4000);
+        } catch (error) {
+            console.error('Erreur lors de la demande de devis', error);
+            alert('Erreur de connexion. Veuillez réessayer ultérieurement.');
+        } finally {
+            setIsSubmittingQuote(false);
+        }
+    };
+
+    // ==========================================
+    // 4. GESTION DES ÉTATS DE CHARGEMENT
+    // ==========================================
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#0B0E14] flex flex-col items-center justify-center pt-[120px]">
+                <Loader2 size={48} className="text-cyna-cyan animate-spin mb-4" />
+                <p className="text-white font-bold tracking-widest uppercase">Décryptage des données...</p>
+            </div>
+        );
+    }
     // ── Ajout au panier avec quantité + durée sélectionnées ──────────────────
     const handleAddToCart = () => {
         const nom = product.nom || product.name || 'Solution CYNA';
@@ -218,6 +287,108 @@ const ProductDetails = () => {
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+
+                    {/* COLONNE DROITE (40%) : Sticky Buy Box */}
+                    <div className="w-full lg:w-[40%] relative">
+                        <div className="sticky top-[120px] bg-[#1C2128] p-6 lg:p-8 rounded-[24px] border border-[#2D333B] shadow-2xl">
+
+                            <h1 className="text-3xl lg:text-[40px] font-bold text-[#F8F9FA] leading-tight mb-4 tracking-tight">
+                                {nomProduit}
+                            </h1>
+
+                            {/* Statut du stock dynamique */}
+                            <div className="flex items-center gap-2 mb-8">
+                                {inStock ? (
+                                    <>
+                                        <span className="w-2.5 h-2.5 rounded-full bg-[#00FF94] animate-pulse"></span>
+                                        <span className="text-sm font-bold text-[#00FF94]">Disponible immédiatement</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF3B3B]"></span>
+                                        <span className="text-sm font-bold text-[#FF3B3B]">Stock virtuel épuisé</span>
+                                    </>
+                                )}
+                            </div>
+
+                            {product.requires_quote ? (
+                                <div className="border-t border-white/10 pt-6 mb-8">
+                                    <div className="flex items-end gap-2 mb-2">
+                                        <span className="text-[36px] font-bold text-[#F5A623] leading-none tracking-tight">
+                                            Sur Devis
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 font-medium">Contactez un de nos experts pour évaluer vos besoins et obtenir une tarification sur mesure.</p>
+                                </div>
+                            ) : (
+                                <div className="border-t border-white/10 pt-6 mb-8">
+                                    {/* Toggle Mensuel / Annuel */}
+                                    <div className="flex bg-[#0B0E14] rounded-lg p-1 border border-[#2D333B] w-fit mb-6">
+                                        <button onClick={() => setBillingCycle('monthly')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-[#2D333B] text-white' : 'text-gray-500 hover:text-white'}`}>Mensuel</button>
+                                        <button onClick={() => setBillingCycle('yearly')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-[#2D333B] text-white' : 'text-gray-500 hover:text-white'}`}>
+                                            Annuel <span className="bg-cyna-cyan/10 text-cyna-cyan px-1.5 py-0.5 rounded text-[10px] border border-cyna-cyan/20">-20%</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Prix Calculé (Ex: -20% si annuel) */}
+                                    <div className="flex items-end gap-2 mb-2">
+                                        <span className="text-[36px] font-bold text-cyna-cyan leading-none font-mono">
+                                            {billingCycle === 'monthly' ? prixBase.toFixed(2) : (prixBase * 0.8).toFixed(2)} €
+                                        </span>
+                                        <span className="text-[#A0A0A0] text-sm pb-1 font-bold">/ {billingCycle === 'monthly' ? 'mois' : 'an'}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 font-medium">Prix par unité/appareil. Facturation {billingCycle === 'monthly' ? 'mensuelle' : 'annuelle'}.</p>
+                                </div>
+                            )}
+
+                            {/* Input Quantité / Nombre d'appareils */}
+                            {!product.requires_quote && (
+                                <div className="mb-8">
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Quantité / Licences</label>
+                                    <input
+                                        type="number"
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(Math.max(1, e.target.value))}
+                                        min="1"
+                                        disabled={!inStock}
+                                        className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-xl h-[52px] px-4 text-white font-bold focus:border-cyna-cyan focus:outline-none transition-colors disabled:opacity-50"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Bouton CTA Principal lié au CartContext */}
+                            {product.requires_quote ? (
+                                <button 
+                                    onClick={() => setIsQuoteModalOpen(true)} 
+                                    className="w-full h-[56px] font-black rounded-xl transition-all flex items-center justify-center gap-2 bg-[#F5A623] text-[#0B0E14] hover:bg-white shadow-[0_0_20px_rgba(245,166,35,0.2)] hover:-translate-y-1">
+                                    DEMANDER UN DEVIS
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleAddToCart()}
+                                    disabled={!inStock || isAdding}
+                                    className={`w-full h-[56px] font-black rounded-xl transition-all flex items-center justify-center gap-2 ${!inStock
+                                        ? 'bg-[#2D333B] text-gray-500 cursor-not-allowed'
+                                        : isAdding
+                                            ? 'bg-white text-[#0B0E14] scale-[0.98]'
+                                            : 'bg-cyna-cyan text-[#0B0E14] hover:bg-white shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:-translate-y-1'
+                                        }`}
+                                >
+                                    {isAdding ? (
+                                        <><Loader2 size={20} className="animate-spin" /> AJOUT EN COURS...</>
+                                    ) : !inStock ? (
+                                        'SERVICE INDISPONIBLE'
+                                    ) : (
+                                        'AJOUTER AU PANIER'
+                                    )}
+                                </button>
+                            )}
+
+                            <p className="text-center text-xs text-gray-500 mt-6 flex items-center justify-center gap-2 font-medium">
+                                <Shield size={14} className="text-cyna-cyan" /> Protection garantie. Annulation à tout moment.
+                            </p>
                             {/* ── Prix total + Bouton panier ────────────────────────────── */}
                             <div>
                                 {/* Prix calculé dynamiquement */}
@@ -259,8 +430,95 @@ const ProductDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {/* =========================================
+          MOBILE STICKY CTA (Visible < 1024px)
+      ========================================= */}
+            <div className="fixed bottom-0 left-0 w-full p-4 bg-[#1C2128]/95 backdrop-blur-md border-t border-white/10 lg:hidden z-50">
+                {product.requires_quote ? (
+                    <button
+                        onClick={() => setIsQuoteModalOpen(true)}
+                        className="w-full h-[56px] font-black rounded-xl transition-all shadow-lg bg-[#F5A623] text-[#0B0E14]"
+                    >
+                        DEMANDER UN DEVIS
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => handleAddToCart()}
+                        disabled={!inStock || isAdding}
+                        className={`w-full h-[56px] font-black rounded-xl transition-all shadow-lg ${!inStock ? 'bg-[#2D333B] text-gray-500' : 'bg-cyna-cyan text-[#0B0E14]'
+                            }`}
+                    >
+                        {!inStock ? 'INDISPONIBLE' : isAdding ? 'AJOUT EN COURS...' : 'AJOUTER AU PANIER'}
+                    </button>
+                )}
+            </div>
+
+            {/* =========================================
+                MODALE DU FORMULAIRE DE DEVIS
+            ========================================= */}
+            {isQuoteModalOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-[#1C2128] border border-[#2D333B] w-full max-w-[600px] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-[#2D333B] flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-white">Demande de devis - {product.nom || product.name}</h2>
+                            <button onClick={() => setIsQuoteModalOpen(false)} className="text-gray-500 hover:text-white transition-colors"><X size={24}/></button>
+                        </div>
+                        
+                        {quoteSuccess ? (
+                            <div className="p-10 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-[#00FF94]/10 rounded-full flex items-center justify-center mb-4">
+                                    <Check size={32} className="text-[#00FF94]" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-2">Demande envoyée !</h3>
+                                <p className="text-[#A0A0A0]">Notre équipe d'experts évaluera votre infrastructure et vous contactera dans les plus brefs délais.</p>
+                            </div>
+                        ) : (
+                            <form onSubmit={submitQuote} className="p-6 overflow-y-auto space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Nom de l'entreprise *</label>
+                                        <input type="text" required value={quoteForm.companyName} onChange={e => setQuoteForm({...quoteForm, companyName: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Responsable à contacter *</label>
+                                        <input type="text" required value={quoteForm.contactPerson} onChange={e => setQuoteForm({...quoteForm, contactPerson: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Adresse complète *</label>
+                                    <input type="text" required value={quoteForm.address} onChange={e => setQuoteForm({...quoteForm, address: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">E-mail professionnel *</label>
+                                        <input type="email" required value={quoteForm.email} onChange={e => setQuoteForm({...quoteForm, email: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Numéro de téléphone *</label>
+                                        <input type="tel" required value={quoteForm.phone} onChange={e => setQuoteForm({...quoteForm, phone: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Disponibilité pour visite ou échange *</label>
+                                    <input type="text" required placeholder="Ex: Lundi au Vendredi matin, semaine prochaine..." value={quoteForm.availability} onChange={e => setQuoteForm({...quoteForm, availability: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" />
+                                </div>
+
+                                <div className="pt-4 flex justify-end gap-3">
+                                    <button type="button" onClick={() => setIsQuoteModalOpen(false)} className="px-5 py-2.5 rounded-lg text-white font-bold border border-[#2D333B] hover:bg-white/5 transition-colors">Annuler</button>
+                                    <button type="submit" disabled={isSubmittingQuote} className="px-6 py-2.5 rounded-lg bg-[#F5A623] text-[#0B0E14] font-bold hover:bg-white transition-colors flex items-center gap-2 disabled:opacity-50">
+                                        {isSubmittingQuote ? <Loader2 size={18} className="animate-spin" /> : null}
+                                        {isSubmittingQuote ? 'Envoi...' : 'Envoyer la demande'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
+export default ProductDetails;
 export default ProductDetails;
