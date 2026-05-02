@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, Shield, Menu, X, Globe } from 'lucide-react';
+import { Search, ShoppingCart, Shield, Menu, X, Globe, Facebook, Twitter, Linkedin, FileText, Mail } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useTranslation } from 'react-i18next';
 
@@ -182,6 +182,20 @@ const Navbar = () => {
           <div className="flex flex-col gap-6">
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-bold text-white uppercase tracking-widest hover:text-cyna-cyan">{t('home')}</Link>
             <Link to="/category/all" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-bold text-gray-300 uppercase tracking-widest hover:text-cyna-cyan">{t('categories')}</Link>
+          </div>
+
+          {/* --- LIENS FOOTER DÉPLACÉS SUR MOBILE --- */}
+          <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Informations & Légal</h3>
+            <Link to="/cgu" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><FileText size={18} /> CGU</Link>
+            <Link to="/mentions-legales" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><Shield size={18} /> Mentions Légales</Link>
+            <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><Mail size={18} /> Contact</Link>
+            
+            <div className="flex items-center gap-6 mt-6 text-gray-400">
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan"><Linkedin size={22} /></a>
+              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan"><Twitter size={22} /></a>
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan"><Facebook size={22} /></a>
+            </div>
           </div>
         </div>
       )}

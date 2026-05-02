@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
-import { Trash2, Box, ShieldAlert, ArrowRight, Lock, Loader, ShieldCheck } from 'lucide-react';
+import { Trash2, Box, ShieldAlert, ArrowRight, Lock, Loader, ShieldCheck, Tag, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Cart = () => {
@@ -13,6 +13,46 @@ const Cart = () => {
 
   const user = JSON.parse(localStorage.getItem('user'));
   const hasUnavailableItems = cart.some(item => item.stock_virtuel === 0);
+
+  // ==========================================
+  // GESTION DES COUPONS DE RÉDUCTION
+  // ==========================================
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponMessage, setCouponMessage] = useState({ type: '', text: '' });
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setIsApplyingCoupon(true);
+    setCouponMessage({ type: '', text: '' });
+    try {
+      const res = await fetch(`http://localhost:3000/coupons/validate/${couponCode}`);
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedCoupon({ code: data.code, discount: data.discount_percentage });
+        setCouponMessage({ type: 'success', text: `Code appliqué ! -${data.discount_percentage}%` });
+      } else {
+        setCouponMessage({ type: 'error', text: data.message || 'Code invalide ou expiré.' });
+      }
+    } catch (err) {
+      setCouponMessage({ type: 'error', text: 'Erreur lors de la vérification.' });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponMessage({ type: '', text: '' });
+  };
+
+  // --- CALCULS DES TOTAUX ---
+  const discountAmount = appliedCoupon ? cartTotal * (appliedCoupon.discount / 100) : 0;
+  const subtotalAfterDiscount = cartTotal - discountAmount;
+  const vat = subtotalAfterDiscount * 0.20;
+  const totalTTC = subtotalAfterDiscount + vat;
 
   const handleCheckout = async () => {
     if (!user) {
@@ -30,7 +70,8 @@ const Cart = () => {
         body: JSON.stringify({
           userId: user.id,
           cart: cart,
-          total: cartTotal, // Le backend utilisera le panier pour calculer le total final pour Stripe
+          total: subtotalAfterDiscount,
+          coupon: appliedCoupon
         }),
       });
 
@@ -177,21 +218,53 @@ const Cart = () => {
           <div className="sticky top-[120px] bg-[#1C2128] border border-[#2D333B] rounded-[24px] p-6 lg:p-8 shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6">Résumé de la commande</h2>
 
+            {/* SECTION CODE PROMO */}
+            <div className="mb-6 border-b border-white/10 pb-6">
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2"><Tag size={14}/> Code promotionnel</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Ex: CYNA20" 
+                  value={couponCode} 
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === 'Enter' && couponCode && handleApplyCoupon()}
+                  disabled={appliedCoupon}
+                  className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-2 text-white font-mono text-sm focus:outline-none focus:border-cyna-cyan uppercase disabled:opacity-50"
+                />
+                {!appliedCoupon ? (
+                  <button onClick={handleApplyCoupon} disabled={!couponCode || isApplyingCoupon} className="bg-[#2D333B] hover:bg-white text-white hover:text-black px-4 py-2 rounded-lg font-bold transition-colors disabled:opacity-50">
+                    {isApplyingCoupon ? '...' : 'Appliquer'}
+                  </button>
+                ) : (
+                  <button onClick={handleRemoveCoupon} className="bg-[#FF3B3B]/10 hover:bg-[#FF3B3B]/20 text-[#FF3B3B] px-4 py-2 rounded-lg font-bold transition-colors flex items-center justify-center" title="Retirer le code"><X size={20}/></button>
+                )}
+              </div>
+              {couponMessage.text && (
+                <p className={`text-xs font-bold mt-2 ${couponMessage.type === 'error' ? 'text-[#FF3B3B]' : 'text-[#00FF94]'}`}>{couponMessage.text}</p>
+              )}
+            </div>
+
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-[#A0A0A0] text-sm font-bold">
                 <span>Sous-total HT</span>
                 <span className="font-mono text-white">{cartTotal.toFixed(2)} €</span>
               </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-[#00FF94] text-sm font-bold">
+                  <span>Réduction ({appliedCoupon.code})</span>
+                  <span className="font-mono">- {discountAmount.toFixed(2)} €</span>
+                </div>
+              )}
               <div className="flex justify-between text-[#A0A0A0] text-sm font-bold">
                 <span>TVA (20%)</span>
-                <span className="font-mono text-white">{(cartTotal * 0.20).toFixed(2)} €</span>
+                <span className="font-mono text-white">{vat.toFixed(2)} €</span>
               </div>
               
               <div className="h-px w-full bg-[#2D333B] my-6"></div>
               
               <div className="flex justify-between items-end">
                 <span className="text-white font-bold">Total TTC</span>
-                <span className="text-3xl font-bold text-cyna-cyan font-mono">{(cartTotal * 1.20).toFixed(2)} €</span>
+                <span className="text-3xl font-bold text-cyna-cyan font-mono">{totalTTC.toFixed(2)} €</span>
               </div>
             </div>
 

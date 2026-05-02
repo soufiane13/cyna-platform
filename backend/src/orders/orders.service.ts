@@ -29,7 +29,21 @@ export class OrdersService {
   }
 
   async create(createOrderDto: any) {
-    const { userId, cart, total } = createOrderDto;
+    const { userId, cart, total, coupon } = createOrderDto;
+
+    // 0. VÉRIFICATION DU COUPON (SÉCURITÉ BACKEND)
+    let discountMultiplier = 1;
+    if (coupon && coupon.code) {
+      const { data: dbCoupon } = await this.supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', coupon.code)
+        .single();
+
+      if (dbCoupon && dbCoupon.is_active) {
+        discountMultiplier = 1 - (dbCoupon.discount_percentage / 100);
+      }
+    }
 
     // 1. CRÉER LA COMMANDE (Table 'orders')
     const { data: order, error: orderError } = await this.supabase
@@ -88,16 +102,19 @@ export class OrdersService {
     }
 
     // 5. CRÉER LA SESSION DE PAIEMENT STRIPE
-    const lineItems = cart.map((item) => ({
-      price_data: {
-        currency: 'eur',
-        product_data: {
-          name: item.name || 'Produit Cyber', // Ajustez selon les données du cart
+    const lineItems = cart.map((item) => {
+      const discountedPrice = item.price * discountMultiplier;
+      return {
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: item.name || 'Produit Cyber', // Ajustez selon les données du cart
+          },
+          unit_amount: Math.round(discountedPrice * 1.20 * 100), // Prix TTC pour Stripe (TVA 20%)
         },
-        unit_amount: Math.round(item.price * 1.20 * 100), // Prix TTC pour Stripe (TVA 20%)
-      },
-      quantity: item.quantity,
-    }));
+        quantity: item.quantity,
+      };
+    });
 
     let checkoutUrl: string | null = null;
     // On sécurise l'URL du frontend avec un fallback local

@@ -14,7 +14,7 @@ const AdminProducts = () => {
     // Gestion de la modale (Ajout / Édition)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [formData, setFormData] = useState({ name: '', description: '', price: 0, category: 'EDR', stock_virtuel: 100, image_url: '' });
+    const [formData, setFormData] = useState({ name: '', description: '', price: 0, category: 'EDR', stock_virtuel: 100, image_url: '', requires_quote: false });
 
     const fileInputRef = useRef(null);
 
@@ -85,11 +85,12 @@ const AdminProducts = () => {
                 price: product.price || product.prix || 0,
             category: product.category || 'EDR',
                 stock_virtuel: product.stock_virtuel !== undefined ? product.stock_virtuel : 100,
-                image_url: product.image_url || ''
+                image_url: product.image_url || '',
+                requires_quote: product.requires_quote || false
             });
         } else {
             setEditingProduct(null);
-        setFormData({ name: '', description: '', price: 0, category: 'EDR', stock_virtuel: 100, image_url: '' });
+        setFormData({ name: '', description: '', price: 0, category: 'EDR', stock_virtuel: 100, image_url: '', requires_quote: false });
         }
         setIsModalOpen(true);
     };
@@ -109,7 +110,8 @@ const AdminProducts = () => {
             price_yearly: formData.price * 12 * 0.8,
             category: formData.category,
             stock_virtuel: formData.stock_virtuel,
-            image_url: formData.image_url
+            image_url: formData.image_url,
+            requires_quote: formData.requires_quote
         };
 
         try {
@@ -172,7 +174,8 @@ const AdminProducts = () => {
                     price_yearly: parseFloat(row.prix || row.price || row.Prix || 0) * 12 * 0.8,
                 category: row.category || row.categorie || row.Catégorie || 'EDR',
                     stock_virtuel: parseInt(row.stock || row.stock_virtuel || row.Stock || 100),
-                    image_url: row.image_url || row.image || ''
+                    image_url: row.image_url || row.image || '',
+                    requires_quote: row.requires_quote || row.sur_devis ? true : false
                 }));
 
                 const res = await fetch('http://localhost:3000/products/bulk', {
@@ -275,7 +278,9 @@ const AdminProducts = () => {
                                     {product.name || product.nom}
                                 </td>
                                 <td className="p-4 text-xs uppercase tracking-widest text-gray-400">{product.category || 'N/A'}</td>
-                                <td className="p-4 text-cyna-cyan font-mono font-bold">{parseFloat(product.price || product.prix || 0).toFixed(2)} €</td>
+                                <td className="p-4 text-cyna-cyan font-mono font-bold">
+                                    {product.requires_quote ? <span className="text-[#F5A623] text-[10px] uppercase font-bold tracking-wider bg-[#F5A623]/10 px-2 py-1 rounded">Sur Devis</span> : `${parseFloat(product.price || product.prix || 0).toFixed(2)} €`}
+                                </td>
                                 <td className="p-4">
                                     {product.stock_virtuel > 0 
                                         ? <span className="px-2 py-1 bg-[#00FF94]/10 text-[#00FF94] text-[10px] uppercase font-bold rounded">Actif</span>
@@ -308,7 +313,10 @@ const AdminProducts = () => {
                             <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Nom du service</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" required /></div>
                             <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Description (Affichée sur la page détail)</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan min-h-[100px]" required /></div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Prix Mensuel (€)</label><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-cyna-cyan font-mono focus:outline-none focus:border-cyna-cyan" required /></div>
+                                <div>
+                                    <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Prix Mensuel (€)</label>
+                                    <input type="number" step="0.01" value={formData.price} disabled={formData.requires_quote} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-cyna-cyan font-mono focus:outline-none focus:border-cyna-cyan disabled:opacity-50 disabled:cursor-not-allowed" required />
+                                </div>
                             <div>
                                 <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Catégorie / Service</label>
                                 <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan appearance-none">
@@ -323,6 +331,10 @@ const AdminProducts = () => {
                             </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2 flex items-center gap-3 bg-[#0B0E14] border border-[#2D333B] p-3 rounded-lg">
+                                    <input type="checkbox" id="requires_quote" checked={formData.requires_quote} onChange={e => setFormData({...formData, requires_quote: e.target.checked, price: e.target.checked ? 0 : formData.price })} className="w-4 h-4 accent-cyna-cyan cursor-pointer" />
+                                    <label htmlFor="requires_quote" className="text-sm text-white font-bold cursor-pointer">Ce produit nécessite un devis (Prix caché)</label>
+                                </div>
                                 <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Stock Virtuel (0 = Épuisé)</label><input type="number" value={formData.stock_virtuel} onChange={e => setFormData({...formData, stock_virtuel: parseInt(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" /></div>
                                 <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Image URL</label><input type="url" placeholder="https://..." value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" /></div>
                             </div>
