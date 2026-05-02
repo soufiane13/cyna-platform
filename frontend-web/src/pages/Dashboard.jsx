@@ -5,6 +5,7 @@ import {
   FileText, Edit2, Trash2, Plus, Settings, Download, AlertCircle, ShieldCheck, Lock
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../context/ToastContext';
 
 
 // ==========================================
@@ -208,25 +209,23 @@ const ProfileView = ({ user, safeName }) => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const [isChangingPwd, setIsChangingPwd] = useState(false);
   const { t } = useTranslation();
+  const toast = useToast();
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSave = async () => {
-    // Vérification des mots de passe avant l'envoi
     if (isChangingPwd && formData.password) {
       if (formData.password !== formData.confirmPassword) {
-        return setMessage('❌ Erreur: Les mots de passe ne correspondent pas.');
+        return toast.error('Mot de passe invalide', 'Les deux mots de passe ne correspondent pas.');
       }
       if (formData.password.length < 8) {
-        return setMessage('❌ Erreur: Le mot de passe doit contenir au moins 8 caractères.');
+        return toast.error('Mot de passe trop court', 'Le mot de passe doit contenir au moins 8 caractères.');
       }
     }
 
     setLoading(true);
-    setMessage('');
     try {
       const res = await fetch(`http://localhost:3000/auth/profile/${user.id}`, {
         method: 'PUT',
@@ -236,19 +235,23 @@ const ProfileView = ({ user, safeName }) => {
 
       if (res.ok) {
         const updatedUser = await res.json();
-        // Mettre à jour le localStorage avec les nouvelles données
         const currentUserData = JSON.parse(localStorage.getItem('user'));
         localStorage.setItem('user', JSON.stringify({ ...currentUserData, user_metadata: updatedUser.user_metadata }));
-        setMessage('✅ Informations mises à jour avec succès !');
+
+        toast.success('Profil mis à jour', 'Vos informations ont été sauvegardées avec succès.');
+
+        if (isChangingPwd && formData.password) {
+          toast.info('Sécurité', 'Mot de passe modifié. Déconnectez-vous des autres appareils si nécessaire.');
+        }
 
         setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
-        setIsChangingPwd(false); // On referme la section mot de passe
+        setIsChangingPwd(false);
       } else {
         const errData = await res.json();
-        setMessage(`❌ Erreur: ${errData.message || 'Impossible de sauvegarder'}`);
+        toast.error('Erreur de sauvegarde', errData.message || 'Impossible de sauvegarder vos informations.');
       }
     } catch (err) {
-      setMessage('❌ Erreur de connexion au serveur.');
+      toast.error('Erreur réseau', 'Impossible de joindre le serveur. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
     }
@@ -257,12 +260,6 @@ const ProfileView = ({ user, safeName }) => {
   return (
     <div className="bg-[#1C2128] rounded-[24px] p-6 md:p-10 border border-[#2D333B] shadow-2xl">
       <h2 className="text-2xl lg:text-3xl font-black text-white mb-8">{t('dashboard.personal_info')}</h2>
-
-      {message && (
-        <div className={`p-4 mb-8 rounded-xl text-sm font-bold animate-fade-in ${message.startsWith('✅') ? 'bg-[#00FF94]/10 border border-[#00FF94]/30 text-[#00FF94]' : 'bg-[#FF3B3B]/10 border border-[#FF3B3B]/30 text-[#FF3B3B]'}`}>
-          {message}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div className="space-y-3">
@@ -356,14 +353,30 @@ const SubscriptionsView = ({ orders }) => {
 const SubscriptionItem = ({ sub }) => {
   const [isManaging, setIsManaging] = useState(false);
   const [autoRenew, setAutoRenew] = useState(true);
+  const toast = useToast();
 
   const productName = sub.products?.name || sub.products?.nom || "Service Cyber";
   const isYearly = sub.selected_plan === 'yearly';
 
-  // Calcul dynamique du prochain cycle de facturation
   const nextDate = new Date(sub.order_date);
   if (isYearly) nextDate.setFullYear(nextDate.getFullYear() + 1);
   else nextDate.setMonth(nextDate.getMonth() + 1);
+
+  const handleToggleRenew = () => {
+    const newVal = !autoRenew;
+    setAutoRenew(newVal);
+    if (newVal) {
+      toast.success(
+        'Renouvellement activé',
+        `${productName} se renouvellera automatiquement le ${nextDate.toLocaleDateString()}.`
+      );
+    } else {
+      toast.warning(
+        'Renouvellement désactivé',
+        `Votre accès à ${productName} expirera le ${nextDate.toLocaleDateString()} si vous ne renouvelez pas manuellement.`
+      );
+    }
+  };
 
   return (
     <div className="bg-[#1C2128] rounded-[24px] p-6 md:p-8 border border-[#2D333B] relative overflow-hidden group hover:border-cyna-cyan/30 transition-colors">
@@ -401,7 +414,7 @@ const SubscriptionItem = ({ sub }) => {
               <p className="text-[#A0A0A0] text-xs mt-1">Votre moyen de paiement sera débité automatiquement à chaque cycle.</p>
             </div>
             <button
-              onClick={() => setAutoRenew(!autoRenew)}
+              onClick={handleToggleRenew}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoRenew ? 'bg-cyna-cyan' : 'bg-gray-600'}`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoRenew ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -423,11 +436,17 @@ const BillingView = () => {
     { id: 1, brand: 'VISA', last4: '4242', exp: '12/28' }
   ]);
   const [isAddingCard, setIsAddingCard] = useState(false);
+  const toast = useToast();
 
   const handleAddCardMock = () => {
-    alert("En production, cette action redirigera vers le portail sécurisé Stripe (SetupIntent) pour enregistrer la carte sans que les données ne passent par votre serveur.");
-    setCards([...cards, { id: Date.now(), brand: 'MASTERCARD', last4: '5555', exp: '09/29' }]);
+    setCards(prev => [...prev, { id: Date.now(), brand: 'MASTERCARD', last4: '5555', exp: '09/29' }]);
     setIsAddingCard(false);
+    toast.success('Carte ajoutée', 'Votre nouvelle carte de paiement a été enregistrée avec succès.');
+  };
+
+  const handleRemoveCard = (card) => {
+    setCards(prev => prev.filter(c => c.id !== card.id));
+    toast.warning('Carte supprimée', `La carte ${card.brand} se terminant par ${card.last4} a été retirée de votre compte.`);
   };
 
   return (
@@ -446,7 +465,7 @@ const BillingView = () => {
                 <span className="text-[#A0A0A0] text-xs">Expire {card.exp}</span>
               </div>
             </div>
-            <button onClick={() => setCards(cards.filter(c => c.id !== card.id))} className="text-[#A0A0A0] hover:text-[#FF3B3B] transition-colors p-2 bg-white/5 rounded-lg"><Trash2 size={18} /></button>
+            <button onClick={() => handleRemoveCard(card)} className="text-[#A0A0A0] hover:text-[#FF3B3B] transition-colors p-2 bg-white/5 rounded-lg"><Trash2 size={18} /></button>
           </div>
         ))}
 

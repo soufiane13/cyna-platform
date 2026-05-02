@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { CartProvider } from './context/CartContext'; // <--- IMPORT 1
+import { CartProvider } from './context/CartContext';
+import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -19,7 +20,7 @@ import UpdatePassword from './pages/UpdatePassword'; // <--- IMPORT DE LA PAGE D
 
 function App() {
   return (
-    // <--- IMPORT 2 : On enveloppe TOUT l'app ici
+    <ToastProvider>
     <CartProvider>
       <Router>
         <Navbar />
@@ -55,6 +56,7 @@ function App() {
         </Routes>
       </Router>
     </CartProvider>
+    </ToastProvider>
   );
 }
 

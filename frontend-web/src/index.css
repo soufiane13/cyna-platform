@@ -26,3 +26,43 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #00F0FF;
 }
+
+/* ─── Animations globales ─────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease forwards;
+}
+
+@keyframes toast-slide-in {
+  from { transform: translateX(calc(100% + 24px)); opacity: 0; }
+  to   { transform: translateX(0);                 opacity: 1; }
+}
+.toast-enter {
+  animation: toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── NexusDevPanel ──────────────────────────────────────────────────────── */
+@keyframes nexus-scan {
+  0%   { top: -3px; }
+  100% { top: 103%; }
+}
+.nexus-scan-line {
+  animation: nexus-scan 3.5s linear infinite;
+}
+
+@keyframes nexus-border-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.18),
+                0 0 24px rgba(0, 240, 255, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.45),
+                0 0 48px rgba(0, 240, 255, 0.22);
+  }
+}
+.nexus-frame {
+  animation: nexus-border-pulse 2.8s ease-in-out infinite;
+}
