@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, ShoppingCart, Box, LogOut, User, MessageSquareText } from 'lucide-react';
+import Navbar from './Navbar';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ const AdminLayout = () => {
   };
 
   return (
+    <>
+    <Navbar />
     <div className="min-h-screen pt-20 lg:pt-28 bg-[#0B0E14] text-white flex flex-col lg:flex-row font-sans selection:bg-cyna-cyan selection:text-black">
       
       {/* === MENU MOBILE (TABS) === */}
@@ -55,6 +58,7 @@ const AdminLayout = () => {
         <Outlet />
       </main>
     </div>
+    </>
   );
 };
 

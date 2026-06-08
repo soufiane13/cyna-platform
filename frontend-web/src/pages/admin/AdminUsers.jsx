@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, User, Shield, Mail, X } from 'lucide-react';
-import { Search, User, Shield, Trash2, AlertTriangle, X, Loader } from 'lucide-react';
+import { Search, User, Shield, Mail, Trash2, AlertTriangle, X, Loader } from 'lucide-react';
 
 // ─── Composant Modal de Confirmation ───────────────────────────────────────
 const DeleteConfirmModal = ({ user, onConfirm, onCancel, isDeleting }) => (
@@ -196,21 +195,13 @@ const AdminUsers = () => {
         setSendingEmail(false);
     };
 
-    return (
-        <div className="p-8 min-h-screen bg-[#0B0E14] text-white animate-fade-in relative">
-            <header className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div><h1 className="text-3xl font-black tracking-tight text-white mb-1">Suivi des Utilisateurs</h1><p className="text-gray-400 text-sm">Analysez les inscriptions et l'engagement client.</p></div>
-                <button onClick={openCollectiveEmail} className="bg-cyna-cyan text-[#0B0E14] px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-white transition-colors"><Mail size={18} /> Message Collectif</button>
-            </header>
-            
-            {/* NOUVEAU: KPIs Utilisateurs */}
     const filteredUsers = users.filter((u) =>
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // ─── Rendu ────────────────────────────────────────────────────────────────
     return (
-        <div className="p-8 min-h-screen bg-[#0B0E14] text-white font-sans">
+        <div className="p-8 min-h-screen bg-[#0B0E14] text-white font-sans animate-fade-in relative">
 
             {/* Modal de confirmation */}
             {userToDelete && (
@@ -239,13 +230,18 @@ const AdminUsers = () => {
             )}
 
             {/* En-tête */}
-            <header className="mb-10">
-                <h1 className="text-3xl font-black tracking-tight text-white mb-1">
-                    Suivi des Utilisateurs
-                </h1>
-                <p className="text-gray-400 text-sm">
-                    Analysez les inscriptions et l'engagement client.
-                </p>
+            <header className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tight text-white mb-1">
+                        Suivi des Utilisateurs
+                    </h1>
+                    <p className="text-gray-400 text-sm">
+                        Analysez les inscriptions et l'engagement client.
+                    </p>
+                </div>
+                <button onClick={openCollectiveEmail} className="bg-cyna-cyan text-[#0B0E14] px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-white transition-colors">
+                    <Mail size={18} /> Message Collectif
+                </button>
             </header>
 
             {/* KPIs */}

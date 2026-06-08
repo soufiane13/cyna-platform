@@ -1,12 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
-import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Cart from './pages/Cart';
 import Dashboard from './pages/Dashboard';
 import AdminLayout from './components/AdminLayout'; // Import du Layout
+import Layout from './components/Layout'; // Import du Layout Public
 import AdminDashboard from './pages/admin/AdminDashboard'; // Import du Dashboard
 import AdminProducts from './pages/admin/AdminProducts'; // Import du gestionnaire de produits
 import AdminOrders from './pages/admin/AdminOrders'; // Import de la gestion des commandes
@@ -18,34 +18,39 @@ import ProductDetails from './pages/ProductDetails';
 import Search from './pages/Search';
 import SiteNotice from './components/SiteNotice'; // <--- IMPORT DU NOUVEAU COMPOSANT
 import UpdatePassword from './pages/UpdatePassword'; // <--- IMPORT DE LA PAGE DE MOT DE PASSE
+import MentionsLegales from './pages/MentionsLegales'; // <--- NOUVELLE PAGE
+import CGU from './pages/CGU'; // <--- NOUVELLE PAGE
+import Contact from './pages/Contact'; // <--- NOUVELLE PAGE
 
 function App() {
   return (
     <ToastProvider>
     <CartProvider>
       <Router>
-        <Navbar />
         
         {/* Bannière d'information (Globale) */}
         <SiteNotice />
         
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/account" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} /> {/* Alias */}
-          <Route path="/payment-success" element={<PaymentSuccess />} /> {/* <--- ROUTE DE RETOUR STRIPE */}
-          <Route path="/update-password" element={<UpdatePassword />} /> {/* <--- ROUTE DE MOT DE PASSE OUBLIÉ */}
-
-          {/* 👇 LES DEUX LIGNES MAGIQUES SONT LÀ 👇 */}
-          <Route path="/category/:slug" element={<Category />} />
-          <Route path="/category" element={<Category />} />
-
-
-          <Route path="/product/:id" element={<ProductDetails />} />
-
-          {/* Moteur de Recherche */} <Route path="/search" element={<Search />} />
+          {/* --- ROUTES PUBLIQUES (Encapsulées dans le Layout avec Navbar et Footer) --- */}
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/account" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
+            <Route path="/category/:slug" element={<Category />} />
+            <Route path="/category" element={<Category />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/search" element={<Search />} />
+            
+            {/* Nouvelles pages Légales & Contact */}
+            <Route path="/mentions-legales" element={<MentionsLegales />} />
+            <Route path="/cgu" element={<CGU />} />
+            <Route path="/contact" element={<Contact />} />
+          </Route>
 
           {/* --- ROUTES ADMIN (Protégées) --- */}
           <Route path="/admin" element={<AdminLayout />}>

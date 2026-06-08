@@ -2,17 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { fetchProducts } from '../services/productService';
 import ProductCard from '../components/ProductCard';
 import Hero from '../components/Hero';
-import Footer from '../components/Footer';
 import BentoGrid from '../components/BentoGrid';
 import { ArrowRight, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CynaChatbot from '../components/CynaChatbot';
-import { Link }                        from 'react-router-dom';
-import { ArrowRight, Zap, ShieldCheck } from 'lucide-react';
-import { fetchProducts }               from '../services/productService';
-import Hero                            from '../components/Hero';
-import BentoGrid                       from '../components/BentoGrid';
-import ProductCard                     from '../components/ProductCard';
 
 // ── Skeleton animé affiché pendant le chargement ─────────────────────────────
 const Skeleton = () => (
@@ -130,21 +123,7 @@ const Home = () => {
         )}
       </section>
       
-      {/* FOOTER (Composant dédié selon cahier des charges) */}
-      <Footer />
-      
       <CynaChatbot />
-
-      {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer className="bg-[#05070A] border-t border-white/10 py-12 lg:py-16">
-        <div className="max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 border-2 border-cyna-cyan rounded flex items-center justify-center text-cyna-cyan text-[10px] font-black">C</div>
-            <span className="font-bold text-white tracking-wider italic">CYNA<span className="text-cyna-cyan">DEFENSE</span></span>
-          </div>
-          <p className="text-sm text-gray-500 font-medium">© 2026 CYNA DEFENSE. Tous droits réservés.</p>
-        </div>
-      </footer>
     </div>
   );
 };
