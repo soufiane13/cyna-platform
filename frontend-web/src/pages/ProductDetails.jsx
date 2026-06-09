@@ -6,6 +6,7 @@ import {
     ShoppingCart, Check, Plus, Minus, AlertCircle, CheckCircle, Lock,
 } from 'lucide-react';
 import { getCategoryConfig } from '../utils/categoryConfig';
+import QuoteRequestForm from '../components/QuoteRequestForm';
 
 // ─── Badges de confiance affichés sous le bouton panier ──────────────────────
 const TRUST = [
@@ -174,11 +175,17 @@ const ProductDetails = () => {
                                     </div>
                                 )}
 
-                                <div className="h-px w-full bg-[#2D333B] mb-6" />
+                            {product.requires_quote ? (
+                                <div className="mt-8">
+                                    <QuoteRequestForm product={product} />
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="h-px w-full bg-[#2D333B] mb-6" />
 
-                                {/* Sélecteur durée */}
-                                <div className="mb-6">
-                                    <label className="block text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest mb-3">Durée d'abonnement</label>
+                                    {/* Sélecteur durée */}
+                                    <div className="mb-6">
+                                        <label className="block text-[10px] font-bold text-[#A0A0A0] uppercase tracking-widest mb-3">Durée d'abonnement</label>
                                     <div className="flex gap-3">
                                         {[
                                             { value: 'monthly', label: 'Mensuel', sub: 'Mois par mois' },
@@ -213,10 +220,13 @@ const ProductDetails = () => {
                                         </button>
                                     </div>
                                 </div>
+                                </>
+                            )}
                             </div>
 
-                            {/* ── Bloc prix + bouton panier ─────────────────────── */}
+                        {!product.requires_quote && (
                             <div>
+                                {/* ── Bloc prix + bouton panier ─────────────────────── */}
                                 <div className="flex items-end justify-between mb-5">
                                     <div>
                                         <p className="text-[10px] text-[#A0A0A0] font-bold tracking-widest uppercase mb-1">
@@ -253,6 +263,7 @@ const ProductDetails = () => {
                                     ))}
                                 </div>
                             </div>
+                        )}
                         </div>
                     </div>
                 </div>

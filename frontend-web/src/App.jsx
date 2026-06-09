@@ -21,6 +21,8 @@ import UpdatePassword from './pages/UpdatePassword'; // <--- IMPORT DE LA PAGE D
 import MentionsLegales from './pages/MentionsLegales'; // <--- NOUVELLE PAGE
 import CGU from './pages/CGU'; // <--- NOUVELLE PAGE
 import Contact from './pages/Contact'; // <--- NOUVELLE PAGE
+import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite';
+import PolitiqueCookies from './pages/PolitiqueCookies';
 
 function App() {
   return (
@@ -50,6 +52,8 @@ function App() {
             <Route path="/mentions-legales" element={<MentionsLegales />} />
             <Route path="/cgu" element={<CGU />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+            <Route path="/politique-cookies" element={<PolitiqueCookies />} />
           </Route>
 
           {/* --- ROUTES ADMIN (Protégées) --- */}

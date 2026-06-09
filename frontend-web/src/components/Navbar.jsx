@@ -176,7 +176,7 @@ const Navbar = () => {
           
           <div className="flex bg-[#1C2128] border border-white/10 rounded-xl h-14 px-4 items-center gap-3 mb-8">
              <Search size={20} className="text-gray-400" />
-             <input type="text" placeholder="Recherche de services..." className="bg-transparent text-white w-full focus:outline-none text-base" />
+             <input type="text" id="mobile-search" name="search" placeholder="Recherche de services..." className="bg-transparent text-white w-full focus:outline-none text-base" />
           </div>
 
           <div className="flex flex-col gap-6">
@@ -189,12 +189,14 @@ const Navbar = () => {
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Informations & Légal</h3>
             <Link to="/cgu" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><FileText size={18} /> CGU</Link>
             <Link to="/mentions-legales" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><Shield size={18} /> Mentions Légales</Link>
+            <Link to="/politique-confidentialite" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><Shield size={18} /> Confidentialité</Link>
+            <Link to="/politique-cookies" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><Shield size={18} /> Cookies</Link>
             <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-cyna-cyan"><Mail size={18} /> Contact</Link>
             
             <div className="flex items-center gap-6 mt-6 text-gray-400">
-              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan"><Linkedin size={22} /></a>
-              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan"><Twitter size={22} /></a>
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan"><Facebook size={22} /></a>
+              <a href="https://linkedin.com/company/cynadefense" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan" aria-label="LinkedIn"><Linkedin size={22} /></a>
+              <a href="https://twitter.com/cynadefense" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan" aria-label="Twitter"><Twitter size={22} /></a>
+              <a href="https://facebook.com/cynadefense" target="_blank" rel="noreferrer" className="hover:text-cyna-cyan" aria-label="Facebook"><Facebook size={22} /></a>
             </div>
           </div>
         </div>

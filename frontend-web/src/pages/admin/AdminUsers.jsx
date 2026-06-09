@@ -272,6 +272,8 @@ const AdminUsers = () => {
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
                         type="text"
+                        id="search-users"
+                        name="search"
                         placeholder="Rechercher un email..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -396,18 +398,18 @@ const AdminUsers = () => {
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Destinataire(s)</label>
+                                <div className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Destinataire(s)</div>
                                 <div className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-gray-400 truncate">
                                     {emailData.isCollective ? `Tous les utilisateurs (${users.length} contacts)` : emailData.to}
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Sujet</label>
-                                <input type="text" value={emailData.subject} onChange={e => setEmailData({...emailData, subject: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-cyna-cyan" placeholder="Objet de l'email..." />
+                                <label htmlFor="email-subject" className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Sujet</label>
+                                <input type="text" id="email-subject" name="subject" value={emailData.subject} onChange={e => setEmailData({...emailData, subject: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-cyna-cyan" placeholder="Objet de l'email..." />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Message</label>
-                                <textarea value={emailData.message} onChange={e => setEmailData({...emailData, message: e.target.value})} className="w-full h-32 bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-cyna-cyan resize-none" placeholder="Votre message..." />
+                                <label htmlFor="email-message" className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Message</label>
+                                <textarea id="email-message" name="message" value={emailData.message} onChange={e => setEmailData({...emailData, message: e.target.value})} className="w-full h-32 bg-[#0B0E14] border border-[#2D333B] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-cyna-cyan resize-none" placeholder="Votre message..." />
                             </div>
                             <button onClick={handleSendEmail} disabled={sendingEmail || !emailData.subject || !emailData.message} className="w-full bg-cyna-cyan text-[#0B0E14] font-bold py-3 rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 {sendingEmail ? "Envoi en cours..." : "Envoyer le message"}

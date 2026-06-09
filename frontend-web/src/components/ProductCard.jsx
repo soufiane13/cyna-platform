@@ -90,34 +90,54 @@ const ProductCard = ({ product }) => {
                 }
 
                 <div className="mt-auto">
-                    <p className="text-[9px] text-[#A0A0A0] font-bold tracking-widest uppercase mb-1">À partir de</p>
-                    <p className={`font-mono text-xl font-bold mb-4 ${cfg.textClass}`}>
-                        {prixAffiche.toFixed(2)} €<span className="text-xs text-[#A0A0A0] font-sans ml-1">/ mois</span>
-                    </p>
+                    {product.requires_quote ? (
+                        <div className="mb-4">
+                            <p className="text-[9px] text-[#A0A0A0] font-bold tracking-widest uppercase mb-1">Tarification</p>
+                            <p className="font-mono text-xl font-bold text-[#F5A623]">Sur devis</p>
+                        </div>
+                    ) : (
+                        <div className="mb-4">
+                            <p className="text-[9px] text-[#A0A0A0] font-bold tracking-widest uppercase mb-1">À partir de</p>
+                            <p className={`font-mono text-xl font-bold ${cfg.textClass}`}>
+                                {prixAffiche.toFixed(2)} €<span className="text-xs text-[#A0A0A0] font-sans ml-1">/ mois</span>
+                            </p>
+                        </div>
+                    )}
 
                     {/* Boutons */}
                     <div className="flex gap-2">
-                        <Link
-                            to={`/product/${product.id}`}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border border-[#2D333B] text-[#A0A0A0] hover:border-white/20 hover:text-white transition-all group/btn"
-                        >
-                            Détails <ArrowRight size={13} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                        </Link>
+                        {product.requires_quote ? (
+                            <Link
+                                to={`/product/${product.id}`}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 bg-[#F5A623]/20 border border-[#F5A623]/40 text-[#F5A623] hover:bg-[#F5A623]/30"
+                            >
+                                Demander un devis <ArrowRight size={14} />
+                            </Link>
+                        ) : (
+                            <>
+                                <Link
+                                    to={`/product/${product.id}`}
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border border-[#2D333B] text-[#A0A0A0] hover:border-white/20 hover:text-white transition-all group/btn"
+                                >
+                                    Détails <ArrowRight size={13} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                                </Link>
 
-                        <button
-                            disabled={!isAvailable}
-                            onClick={handleAddToCart}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300
-                                ${!isAvailable
-                                    ? 'bg-[#2D333B] text-gray-600 cursor-not-allowed'
-                                    : added
-                                        ? 'bg-[#00FF94]/20 border border-[#00FF94]/40 text-[#00FF94]'
-                                        : `bg-white/5 border ${cfg.border} ${cfg.textClass} hover:bg-opacity-20`
-                                }`}
-                            style={isAvailable && !added ? { '--tw-bg-opacity': 1 } : {}}
-                        >
-                            {added ? <><Check size={13} /> Ajouté !</> : <><ShoppingCart size={13} /> Ajouter</>}
-                        </button>
+                                <button
+                                    disabled={!isAvailable}
+                                    onClick={handleAddToCart}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300
+                                        ${!isAvailable
+                                            ? 'bg-[#2D333B] text-gray-600 cursor-not-allowed'
+                                            : added
+                                                ? 'bg-[#00FF94]/20 border border-[#00FF94]/40 text-[#00FF94]'
+                                                : `bg-white/5 border ${cfg.border} ${cfg.textClass} hover:bg-opacity-20`
+                                        }`}
+                                    style={isAvailable && !added ? { '--tw-bg-opacity': 1 } : {}}
+                                >
+                                    {added ? <><Check size={13} /> Ajouté !</> : <><ShoppingCart size={13} /> Ajouter</>}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

@@ -58,12 +58,28 @@ const Contact = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-bold text-[#A0A0A0] mb-2">Adresse e-mail *</label>
-                <input type="email" required className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-xl px-5 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-cyna-cyan transition-colors" placeholder="votre@email.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                <input 
+                  type="email" 
+                  id="email" 
+                  name="email" 
+                  required 
+                  className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-xl px-5 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-cyna-cyan transition-colors" 
+                  placeholder="votre@email.com" 
+                  value={formData.email} 
+                  onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                />
               </div>
               
               <div>
                 <label className="block text-sm font-bold text-[#A0A0A0] mb-2">Sujet du message *</label>
-                <select required className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-xl px-5 py-3 text-white focus:outline-none focus:border-cyna-cyan transition-colors appearance-none" value={formData.subject} onChange={(e) => setFormData({...formData, subject: e.target.value})}>
+                <select 
+                  id="subject" 
+                  name="subject" 
+                  required 
+                  className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-xl px-5 py-3 text-white focus:outline-none focus:border-cyna-cyan transition-colors appearance-none" 
+                  value={formData.subject} 
+                  onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                >
                   <option value="" disabled>Sélectionnez un sujet</option>
                   <option value="support">Support technique</option>
                   <option value="billing">Question abonnement / facturation</option>
@@ -74,7 +90,16 @@ const Contact = () => {
               
               <div>
                 <label className="block text-sm font-bold text-[#A0A0A0] mb-2">Message *</label>
-                <textarea required rows="5" className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-xl px-5 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-cyna-cyan transition-colors resize-none" placeholder="Détaillez votre demande ici..." value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})}></textarea>
+                <textarea 
+                  id="message" 
+                  name="message" 
+                  required 
+                  rows="5" 
+                  className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-xl px-5 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-cyna-cyan transition-colors resize-none" 
+                  placeholder="Détaillez votre demande ici..." 
+                  value={formData.message} 
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                ></textarea>
               </div>
               
               <button type="submit" className="w-full bg-cyna-cyan hover:bg-[#00D1E0] text-black font-black py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:shadow-[0_0_30px_rgba(0,240,255,0.4)] uppercase tracking-wide">Envoyer le message</button>

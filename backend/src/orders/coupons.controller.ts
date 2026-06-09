@@ -4,7 +4,17 @@ import type { Response } from 'express';
 
 @Controller('coupons')
 export class CouponsController {
-  private supabase: SupabaseClient = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
+  private supabase: SupabaseClient;
+
+  constructor() {
+    const sbUrl = process.env.SUPABASE_URL;
+    const sbKey = process.env.SUPABASE_KEY;
+
+    if (!sbUrl || !sbKey) {
+      throw new Error('⚠️ [CouponsController] Il manque SUPABASE_URL ou SUPABASE_KEY dans le fichier .env !');
+    }
+    this.supabase = createClient(sbUrl, sbKey);
+  }
 
   @Get()
   async getAll() {

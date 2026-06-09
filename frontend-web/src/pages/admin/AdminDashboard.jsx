@@ -10,12 +10,10 @@ const AdminDashboard = () => {
     // États pour le Carrousel et Top Produits
     const [carouselItems, setCarouselItems] = useState([]);
     const [loadingCarousel, setLoadingCarousel] = useState(false);
-    const [topProducts, setTopProducts] = useState([
-        { id: 1, name: "CYNA EDR Premium", category: "EDR" },
-        { id: 2, name: "SOC Managé 24/7", category: "SOC" },
-        { id: 3, name: "Audit & Pentest", category: "AUDIT" },
-        { id: 4, name: "XDR Unified", category: "XDR" }
-    ]);
+    const [heroBg, setHeroBg] = useState('');
+    const [loadingHeroBg, setLoadingHeroBg] = useState(false);
+    const [topProducts, setTopProducts] = useState([]);
+    const [loadingTopProducts, setLoadingTopProducts] = useState(false);
 
     // Stats & Activités dynamiques
     const [stats, setStats] = useState({
@@ -54,6 +52,18 @@ const AdminDashboard = () => {
                 else setCarouselItems([{ title: 'Nouveau Slide', subtitle: 'Description...', visual: 'SOC', cta: 'Découvrir' }]);
             })
             .catch(err => console.error("Erreur chargement carrousel", err));
+
+        // Charger l'image de fond du Hero
+        fetch('http://localhost:3000/hero-bg')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => { if (data?.image_url) setHeroBg(data.image_url); })
+            .catch(err => console.error("Erreur chargement hero bg", err));
+
+        // Charger les top produits dynamiquement
+        fetch('http://localhost:3000/top-products')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => setTopProducts(data))
+            .catch(err => console.error("Erreur chargement top produits", err));
 
         // Charger les utilisateurs pour le KPI + tendance réelle
         fetch('http://localhost:3000/auth/users')
@@ -177,6 +187,50 @@ const AdminDashboard = () => {
         }
     };
 
+    // --- FONCTIONS HERO BG ---
+    const handleHeroBgUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert("❌ L'image est trop volumineuse (Max 2 Mo).");
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result;
+            setHeroBg(base64String);
+            
+            setLoadingHeroBg(true);
+            try {
+                const response = await fetch('http://localhost:3000/hero-bg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_url: base64String }) });
+                if (response.ok) alert("✅ Image de fond mise à jour avec succès !");
+                else alert("❌ Erreur lors de la mise à jour de l'image.");
+            } catch (error) { alert("❌ Erreur de connexion au serveur."); } 
+            finally { setLoadingHeroBg(false); }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleSlideImageUpload = (index, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert("❌ L'image est trop volumineuse (Max 2 Mo).");
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            handleCarouselChange(index, 'image_url', reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
     // --- FONCTIONS CARROUSEL ---
     const handleCarouselChange = (index, field, value) => {
         const newItems = [...carouselItems];
@@ -207,6 +261,26 @@ const AdminDashboard = () => {
         if (direction === 'up' && index > 0) [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
         else if (direction === 'down' && index < newItems.length - 1) [newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]];
         setTopProducts(newItems);
+    };
+
+    const saveTopProductsOrder = async () => {
+        setLoadingTopProducts(true);
+        try {
+            // On extrait uniquement les noms pour sauvegarder l'ordre
+            const orderNames = topProducts.map(p => p.name);
+            
+            const response = await fetch('http://localhost:3000/top-products/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: orderNames })
+            });
+            if (response.ok) alert("✅ Ordre des produits enregistré avec succès !");
+            else alert("❌ Erreur lors de l'enregistrement de l'ordre.");
+        } catch (error) {
+            alert("❌ Erreur de connexion au serveur.");
+        } finally {
+            setLoadingTopProducts(false);
+        }
     };
 
     const calcTrend = (current, last) => {
@@ -281,9 +355,23 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
                 {/* --- 2. WIDGET CARROUSEL --- */}
                 <section className="bg-[#1C2128] border border-white/10 p-6 rounded-2xl shadow-lg flex flex-col h-full">
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
-                        <span className="flex items-center gap-2"><Image size={20} className="text-cyna-cyan" /> Slides Carrousel</span>
-                        <button onClick={() => setCarouselItems([...carouselItems, { title: '', subtitle: '', visual: 'SOC', cta: 'Bouton' }])} className="text-cyna-cyan text-sm flex items-center gap-1 hover:underline">
+                    <div className="mb-6 pb-6 border-b border-white/10">
+                        <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <Image size={18} className="text-cyna-cyan" /> Image de fond (Accueil)
+                        </h2>
+                        <div className="flex items-center gap-4">
+                            {heroBg && (
+                                <div className="w-16 h-12 rounded-lg bg-[#0B0E14] border border-[#2D333B] overflow-hidden flex-shrink-0">
+                                    <img src={heroBg} alt="Fond" className="w-full h-full object-cover opacity-60" />
+                                </div>
+                            )}
+                            <input type="file" accept="image/*" onChange={handleHeroBgUpload} disabled={loadingHeroBg} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyna-cyan file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-cyna-cyan file:text-black hover:file:bg-white transition-colors cursor-pointer disabled:opacity-50" />
+                        </div>
+                    </div>
+
+                    <h2 className="text-lg font-bold text-white mb-4 flex items-center justify-between">
+                        <span>Slides Carrousel</span>
+                        <button onClick={() => setCarouselItems([...carouselItems, { title: '', subtitle: '', visual: 'SOC', cta: 'Bouton', image_url: '' }])} className="text-cyna-cyan text-sm flex items-center gap-1 hover:underline">
                             <Plus size={16} /> Ajouter
                         </button>
                     </h2>
@@ -293,6 +381,10 @@ const AdminDashboard = () => {
                                 <button onClick={() => setCarouselItems(carouselItems.filter((_, i) => i !== idx))} className="absolute top-3 right-3 text-gray-500 hover:text-red-500 transition-colors"><Trash2 size={16}/></button>
                                 <input type="text" value={item.title} onChange={e => handleCarouselChange(idx, 'title', e.target.value)} placeholder="Titre principal" className="w-full bg-transparent text-white font-bold mb-2 focus:outline-none focus:text-cyna-cyan" />
                                 <input type="text" value={item.subtitle} onChange={e => handleCarouselChange(idx, 'subtitle', e.target.value)} placeholder="Sous-titre" className="w-full bg-transparent text-gray-400 text-sm mb-3 focus:outline-none" />
+                                <div className="flex items-center gap-3 mb-3">
+                                    {item.image_url && <img src={item.image_url} alt="Slide BG" className="w-10 h-10 object-cover rounded border border-white/10" />}
+                                    <input type="file" accept="image/*" onChange={e => handleSlideImageUpload(idx, e)} className="w-full text-xs text-gray-400 file:bg-white/10 file:text-white file:border-0 file:rounded file:px-2 file:py-1 file:mr-2 hover:file:bg-white/20 transition-colors cursor-pointer" />
+                                </div>
                                 <div className="flex gap-3">
                                     <select value={item.visual} onChange={e => handleCarouselChange(idx, 'visual', e.target.value)} className="bg-[#1C2128] border border-white/10 rounded-lg px-2 py-1 text-xs text-gray-300 focus:outline-none">
                                         <option value="SOC">Icône SOC</option>
@@ -315,9 +407,9 @@ const AdminDashboard = () => {
                         <span className="flex items-center gap-2"><Star size={20} className="text-[#F5A623]" /> Ordre Top Produits</span>
                         <span className="text-xs bg-white/10 text-gray-400 px-2 py-1 rounded">Glisser ou utiliser les flèches</span>
                     </h2>
-                    <div className="space-y-3 flex-1">
+                    <div className="space-y-3 flex-1 min-h-[200px]">
                         {topProducts.map((prod, idx) => (
-                            <div key={prod.id} className="flex items-center justify-between bg-[#0B0E14] p-4 rounded-xl border border-white/5 hover:border-white/20 transition-colors">
+                            <div key={prod.name} className="flex items-center justify-between bg-[#0B0E14] p-4 rounded-xl border border-white/5 hover:border-white/20 transition-colors">
                                 <div>
                                     <p className="font-bold text-white text-sm">{prod.name}</p>
                                     <p className="text-xs text-gray-500 uppercase tracking-widest">{prod.category}</p>
@@ -329,8 +421,8 @@ const AdminDashboard = () => {
                             </div>
                         ))}
                     </div>
-                    <button onClick={() => alert("À connecter à votre base de données NestJS (Route /top-products)")} className="w-full mt-4 bg-white/5 border border-white/10 text-white font-bold py-3 rounded-lg flex justify-center gap-2 hover:bg-white/10 transition-colors">
-                        <Save size={18}/> Enregistrer l'ordre
+                    <button onClick={saveTopProductsOrder} disabled={loadingTopProducts} className="w-full mt-4 bg-white/5 border border-white/10 text-white font-bold py-3 rounded-lg flex justify-center gap-2 hover:bg-white/10 transition-colors disabled:opacity-50">
+                        {loadingTopProducts ? 'Enregistrement...' : <><Save size={18}/> Enregistrer l'ordre</>}
                     </button>
                 </section>
             </div>

@@ -29,7 +29,8 @@ const AdminProducts = () => {
             const res = await fetch('http://localhost:3000/products');
             if (res.ok) {
                 const data = await res.json();
-                setProducts(data);
+                // Sécurité : on s'assure de toujours avoir un tableau
+                setProducts(Array.isArray(data) ? data : []);
             }
         } catch (error) {
             console.error("Erreur chargement produits:", error);
@@ -46,9 +47,13 @@ const AdminProducts = () => {
     };
 
     const getSortedProducts = () => {
+        // Sécurité : empêche le crash si products n'est pas un tableau
+        if (!Array.isArray(products)) return [];
+        
         let filterData = products.filter(p => {
-            const matchSearch = (p.name || p.nom || '').toLowerCase().includes(searchTerm.toLowerCase());
-            const matchCat = categoryFilter === 'all' || (p.category || p.categorie || 'EDR').toUpperCase() === categoryFilter.toUpperCase();
+            // Sécurité : conversion en String pour éviter les crashs sur des entiers
+            const matchSearch = String(p.name || p.nom || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchCat = categoryFilter === 'all' || String(p.category || p.categorie || 'EDR').toUpperCase() === categoryFilter.toUpperCase();
             return matchSearch && matchCat;
         });
         
@@ -58,8 +63,8 @@ const AdminProducts = () => {
             
             // Gestion spécifique pour les noms de colonnes bilingues de la BDD
             if (sortConfig.key === 'name') {
-                valA = (a.name || a.nom || '').toLowerCase();
-                valB = (b.name || b.nom || '').toLowerCase();
+                valA = String(a.name || a.nom || '').toLowerCase();
+                valB = String(b.name || b.nom || '').toLowerCase();
             } else if (sortConfig.key === 'price') {
                 valA = parseFloat(a.price || a.prix || 0);
                 valB = parseFloat(b.price || b.prix || 0);
@@ -93,6 +98,24 @@ const AdminProducts = () => {
         setFormData({ name: '', description: '', price: 0, category: 'EDR', stock_virtuel: 100, image_url: '', requires_quote: false });
         }
         setIsModalOpen(true);
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Vérification de la taille (2 Mo = 2 * 1024 * 1024 octets)
+        if (file.size > 2 * 1024 * 1024) {
+            alert("❌ L'image est trop volumineuse. La taille maximale autorisée est de 2 Mo.");
+            e.target.value = ''; // Réinitialise le champ
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData({ ...formData, image_url: reader.result });
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSave = async (e) => {
@@ -220,6 +243,8 @@ const AdminProducts = () => {
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                         <input 
                             type="text" 
+                            id="search-products"
+                            name="search"
                             placeholder="Rechercher un service..." 
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
@@ -228,6 +253,8 @@ const AdminProducts = () => {
                     </div>
                     <select 
                         value={categoryFilter} 
+                        id="category-filter"
+                        name="categoryFilter"
                         onChange={e => setCategoryFilter(e.target.value)} 
                         className="w-full sm:w-auto bg-[#0B0E14] border border-[#2D333B] text-white text-sm rounded-lg h-10 px-4 focus:outline-none focus:border-cyna-cyan cursor-pointer transition-colors"
                     >
@@ -310,16 +337,16 @@ const AdminProducts = () => {
                         </div>
 
                         <div className="p-6 overflow-y-auto space-y-4">
-                            <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Nom du service</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" required /></div>
-                            <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Description (Affichée sur la page détail)</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan min-h-[100px]" required /></div>
+                            <div><label htmlFor="product-name" className="block text-xs text-gray-400 font-bold mb-2 uppercase">Nom du service</label><input type="text" id="product-name" name="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" required /></div>
+                            <div><label htmlFor="product-desc" className="block text-xs text-gray-400 font-bold mb-2 uppercase">Description (Affichée sur la page détail)</label><textarea id="product-desc" name="description" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan min-h-[100px]" required /></div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Prix Mensuel (€)</label>
-                                    <input type="number" step="0.01" value={formData.price} disabled={formData.requires_quote} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-cyna-cyan font-mono focus:outline-none focus:border-cyna-cyan disabled:opacity-50 disabled:cursor-not-allowed" required />
+                                    <label htmlFor="product-price" className="block text-xs text-gray-400 font-bold mb-2 uppercase">Prix Mensuel (€)</label>
+                                    <input type="number" id="product-price" name="price" step="0.01" value={formData.price} disabled={formData.requires_quote} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-cyna-cyan font-mono focus:outline-none focus:border-cyna-cyan disabled:opacity-50 disabled:cursor-not-allowed" required />
                                 </div>
                             <div>
-                                <label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Catégorie / Service</label>
-                                <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan appearance-none">
+                                <label htmlFor="product-category" className="block text-xs text-gray-400 font-bold mb-2 uppercase">Catégorie / Service</label>
+                                <select id="product-category" name="category" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan appearance-none">
                                     <optgroup label="CAT. 1 : DÉTECTION & RÉPONSE">
                                         <option value="EDR">EDR (Endpoint Detection)</option>
                                         <option value="XDR">XDR (Extended Detection)</option>
@@ -332,11 +359,21 @@ const AdminProducts = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2 flex items-center gap-3 bg-[#0B0E14] border border-[#2D333B] p-3 rounded-lg">
-                                    <input type="checkbox" id="requires_quote" checked={formData.requires_quote} onChange={e => setFormData({...formData, requires_quote: e.target.checked, price: e.target.checked ? 0 : formData.price })} className="w-4 h-4 accent-cyna-cyan cursor-pointer" />
+                                    <input type="checkbox" id="requires_quote" name="requires_quote" checked={formData.requires_quote} onChange={e => setFormData({...formData, requires_quote: e.target.checked, price: e.target.checked ? 0 : formData.price })} className="w-4 h-4 accent-cyna-cyan cursor-pointer" />
                                     <label htmlFor="requires_quote" className="text-sm text-white font-bold cursor-pointer">Ce produit nécessite un devis (Prix caché)</label>
                                 </div>
-                                <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Stock Virtuel (0 = Épuisé)</label><input type="number" value={formData.stock_virtuel} onChange={e => setFormData({...formData, stock_virtuel: parseInt(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" /></div>
-                                <div><label className="block text-xs text-gray-400 font-bold mb-2 uppercase">Image URL</label><input type="url" placeholder="https://..." value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" /></div>
+                                <div><label htmlFor="product-stock" className="block text-xs text-gray-400 font-bold mb-2 uppercase">Stock Virtuel (0 = Épuisé)</label><input type="number" id="product-stock" name="stock_virtuel" value={formData.stock_virtuel} onChange={e => setFormData({...formData, stock_virtuel: parseInt(e.target.value)})} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyna-cyan" /></div>
+                                <div>
+                                    <label htmlFor="product-image" className="block text-xs text-gray-400 font-bold mb-2 uppercase">Image du service (Max 2 Mo)</label>
+                                    <div className="flex items-center gap-4">
+                                        {formData.image_url && (
+                                            <div className="w-12 h-12 rounded-lg bg-[#0B0E14] border border-[#2D333B] overflow-hidden flex-shrink-0">
+                                                <img src={formData.image_url} alt="Aperçu" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                        <input type="file" id="product-image" accept="image/*" onChange={handleImageUpload} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyna-cyan file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-cyna-cyan file:text-black hover:file:bg-white transition-colors cursor-pointer" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

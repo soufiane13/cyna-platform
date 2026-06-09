@@ -233,11 +233,18 @@ const Hero = () => {
     const [slides, setSlides] = useState(DEFAULT_SLIDES);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop');
 
     useEffect(() => {
         fetch('http://localhost:3000/carousel')
             .then(res => res.ok ? res.json() : null)
             .then(data => { if (data?.items?.length) setSlides(data.items); })
+            .catch(() => {});
+
+        // Récupérer l'image de fond dynamique
+        fetch('http://localhost:3000/hero-bg')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => { if (data?.image_url) setBgImage(data.image_url); })
             .catch(() => {});
     }, []);
 
@@ -259,6 +266,16 @@ const Hero = () => {
 
     return (
         <section className="relative w-full min-h-[720px] bg-cyna-navy overflow-hidden flex flex-col">
+
+            {/* ── Image de fond (Côté Gauche) avec fondu vers la droite ── */}
+            <div 
+                className="absolute inset-y-0 left-0 w-full lg:w-2/3 bg-cover bg-center opacity-20 pointer-events-none transition-all duration-700 ease-in-out"
+                style={{ 
+                    backgroundImage: `url("${slide.image_url || bgImage}")`,
+                    WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
+                    maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)'
+                }}
+            />
 
             {/* Fond grille de points */}
             <div className="absolute inset-0 opacity-[0.04]"

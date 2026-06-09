@@ -22,10 +22,12 @@ const AdminOrders = () => {
                 fetch('http://localhost:3000/auth/users').catch(() => ({ ok: false }))
             ]);
             if (ordersRes.ok) {
-                setOrders(await ordersRes.json());
+                const oData = await ordersRes.json();
+                setOrders(Array.isArray(oData) ? oData : []);
             }
             if (usersRes.ok) {
-                setUsers(await usersRes.json());
+                const uData = await usersRes.json();
+                setUsers(Array.isArray(uData) ? uData : []);
             }
         } catch (error) {
             console.error("Erreur chargement commandes:", error);
@@ -59,6 +61,8 @@ const AdminOrders = () => {
     };
 
     const getSortedOrders = () => {
+        if (!Array.isArray(orders)) return [];
+        
         let filterData = orders.filter(o => {
             const user = users.find(u => u.id === o.user_id);
             const rawName = user?.user_metadata?.full_name;
@@ -93,9 +97,11 @@ const AdminOrders = () => {
             
             <div className="bg-[#1C2128] border border-[#2D333B] p-4 rounded-t-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-[300px]"><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" /><input type="text" placeholder="Rechercher (ID, Email, Nom)..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg h-10 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-cyna-cyan" /></div>
+                    <div className="relative w-full sm:w-[300px]"><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" /><input type="text" id="search-orders" name="search" placeholder="Rechercher (ID, Email, Nom)..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[#0B0E14] border border-[#2D333B] rounded-lg h-10 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-cyna-cyan" /></div>
                     <select 
                         value={statusFilter} 
+                        id="status-filter"
+                        name="statusFilter"
                         onChange={e => setStatusFilter(e.target.value)} 
                         className="w-full sm:w-auto bg-[#0B0E14] border border-[#2D333B] text-white text-sm rounded-lg h-10 px-4 focus:outline-none focus:border-cyna-cyan cursor-pointer"
                     >
@@ -126,7 +132,8 @@ const AdminOrders = () => {
                         const rawName = user?.user_metadata?.full_name;
                         const safeName = typeof rawName === 'object' ? rawName?.full_name : rawName;
                         const userName = safeName || user?.user_metadata?.company || 'Client Inconnu';
-                            const userEmail = user?.email || (order.user_id ? order.user_id.substring(0, 12) + '...' : '');
+                        // Sécurité: Conversion en String avant substring
+                        const userEmail = user?.email || (order.user_id ? String(order.user_id).substring(0, 12) + '...' : '');
                             return (
                                 <tr key={order.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="p-4 text-xs font-mono text-gray-500">#{order.id.substring(0, 8)}</td>
@@ -137,7 +144,7 @@ const AdminOrders = () => {
                                     </td>
                                     <td className="p-4 text-white font-mono font-bold">{(Number(order.total_amount || order.total || 0) * 1.20).toFixed(2)} € <span className="text-[10px] text-gray-500 font-sans">TTC</span></td>
                                     <td className="p-4">{getStatusBadge(order.status)}</td>
-                                    <td className="p-4 text-right"><select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="bg-[#0B0E14] border border-[#2D333B] text-xs text-white rounded px-2 py-1 outline-none cursor-pointer"><option value="pending">En attente</option><option value="paid">Payé</option><option value="cancelled">Annulé</option></select></td>
+                                    <td className="p-4 text-right"><select id={`status-${order.id}`} name="status" value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="bg-[#0B0E14] border border-[#2D333B] text-xs text-white rounded px-2 py-1 outline-none cursor-pointer"><option value="pending">En attente</option><option value="paid">Payé</option><option value="cancelled">Annulé</option></select></td>
                                 </tr>
                             );
                         })}
