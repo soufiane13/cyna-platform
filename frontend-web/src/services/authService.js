@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/auth";
+const API_URL = "https://cyna-api-d6b4.onrender.com/auth";
 
 // Fonction pour se connecter
 export const loginUser = async (email, password) => {

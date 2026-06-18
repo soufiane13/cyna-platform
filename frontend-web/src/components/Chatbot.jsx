@@ -26,7 +26,7 @@ const Chatbot = () => {
 
     try {
       // 2. Envoyer la question au Backend NestJS
-      const response = await fetch('http://localhost:3000/chat/ask', {
+      const response = await fetch('https://cyna-api-d6b4.onrender.com/chat/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMsg })
@@ -52,7 +52,7 @@ const Chatbot = () => {
     // Récupérer le dernier message de l'utilisateur comme "question complexe"
     const lastUserMessage = messages.filter(m => m.sender === 'user').pop()?.text || 'Demande de contact';
 
-    await fetch('http://localhost:3000/messages', {
+    await fetch('https://cyna-api-d6b4.onrender.com/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userName: "Visiteur", contactInfo: contactEmail, message: lastUserMessage })

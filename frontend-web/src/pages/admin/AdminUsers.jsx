@@ -79,8 +79,8 @@ const AdminUsers = () => {
         setLoading(true);
         try {
             const [usersRes, ordersRes] = await Promise.all([
-                fetch('http://localhost:3000/auth/users'),
-                fetch('http://localhost:3000/orders'),
+                fetch('https://cyna-api-d6b4.onrender.com/auth/users'),
+                fetch('https://cyna-api-d6b4.onrender.com/orders'),
             ]);
 
             if (usersRes.ok) setUsers(await usersRes.json());
@@ -98,7 +98,7 @@ const AdminUsers = () => {
         setIsDeleting(true);
 
         try {
-            const res = await fetch(`http://localhost:3000/auth/users/${userToDelete.id}`, {
+            const res = await fetch(`https://cyna-api-d6b4.onrender.com/auth/users/${userToDelete.id}`, {
                 method: 'DELETE',
             });
 
@@ -178,7 +178,7 @@ const AdminUsers = () => {
     const handleSendEmail = async () => {
         setSendingEmail(true);
         try {
-            const res = await fetch('http://localhost:3000/messages/send-email', {
+            const res = await fetch('https://cyna-api-d6b4.onrender.com/messages/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ to: emailData.to, subject: emailData.subject, message: emailData.message })

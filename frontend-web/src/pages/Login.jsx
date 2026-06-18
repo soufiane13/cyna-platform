@@ -57,7 +57,7 @@ const Auth = () => {
 
     try {
       if (view === 'login') {
-        const loginRes = await fetch('http://localhost:3000/auth/login', {
+        const loginRes = await fetch('https://cyna-api-d6b4.onrender.com/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, password: formData.password })
@@ -72,7 +72,7 @@ const Auth = () => {
           setTempToken(data.token);
           
           // Appel au backend pour générer le QR Code
-          const setupRes = await fetch('http://localhost:3000/auth/2fa/setup', {
+          const setupRes = await fetch('https://cyna-api-d6b4.onrender.com/auth/2fa/setup', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${data.token}` }
           });
@@ -100,7 +100,7 @@ const Auth = () => {
         window.location.reload();
       } 
       else if (view === 'setup-2fa' || view === 'verify-2fa') {
-        const verifyRes = await fetch('http://localhost:3000/auth/2fa/verify', {
+        const verifyRes = await fetch('https://cyna-api-d6b4.onrender.com/auth/2fa/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tempToken}` },
           body: JSON.stringify({ factorId, code: twoFaCode })
@@ -113,7 +113,7 @@ const Auth = () => {
         window.location.reload();
       }
       else if (view === 'register') {
-        const registerRes = await fetch('http://localhost:3000/auth/register', {
+        const registerRes = await fetch('https://cyna-api-d6b4.onrender.com/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, password: formData.password, fullName: formData.fullName })
@@ -128,7 +128,7 @@ const Auth = () => {
         }, 2000);
       }
       else if (view === 'forgot') {
-        const resetRes = await fetch('http://localhost:3000/auth/reset-password', {
+        const resetRes = await fetch('https://cyna-api-d6b4.onrender.com/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email })

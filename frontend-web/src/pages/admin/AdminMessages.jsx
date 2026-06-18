@@ -18,7 +18,7 @@ const AdminMessages = () => {
     const fetchMessages = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/messages');
+            const res = await fetch('https://cyna-api-d6b4.onrender.com/messages');
             if (res.ok) {
                 setMessages(await res.json());
             }
@@ -32,7 +32,7 @@ const AdminMessages = () => {
     // Mettre à jour le statut d'un message (ex: marquer comme lu/répondu)
     const updateStatus = async (id, status) => {
         try {
-            const res = await fetch(`http://localhost:3000/messages/${id}/status`, {
+            const res = await fetch(`https://cyna-api-d6b4.onrender.com/messages/${id}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status })
@@ -58,7 +58,7 @@ const AdminMessages = () => {
     const handleSendEmail = async () => {
         setSendingEmail(true);
         try {
-            const res = await fetch('http://localhost:3000/messages/send-email', {
+            const res = await fetch('https://cyna-api-d6b4.onrender.com/messages/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ to: emailData.to, subject: emailData.subject, message: emailData.message })

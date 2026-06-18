@@ -45,7 +45,7 @@ const AdminDashboard = () => {
             return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
         };
 
-        fetch('http://localhost:3000/carousel')
+        fetch('https://cyna-api-d6b4.onrender.com/carousel')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
                 if (data && data.length > 0) setCarouselItems(data);
@@ -54,19 +54,19 @@ const AdminDashboard = () => {
             .catch(err => console.error("Erreur chargement carrousel", err));
 
         // Charger l'image de fond du Hero
-        fetch('http://localhost:3000/hero-bg')
+        fetch('https://cyna-api-d6b4.onrender.com/hero-bg')
             .then(res => res.ok ? res.json() : null)
             .then(data => { if (data?.image_url) setHeroBg(data.image_url); })
             .catch(err => console.error("Erreur chargement hero bg", err));
 
         // Charger les top produits dynamiquement
-        fetch('http://localhost:3000/top-products')
+        fetch('https://cyna-api-d6b4.onrender.com/top-products')
             .then(res => res.ok ? res.json() : [])
             .then(data => setTopProducts(data))
             .catch(err => console.error("Erreur chargement top produits", err));
 
         // Charger les utilisateurs pour le KPI + tendance réelle
-        fetch('http://localhost:3000/auth/users')
+        fetch('https://cyna-api-d6b4.onrender.com/auth/users')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
                 const users = Array.isArray(data) ? data : (data.users || []);
@@ -77,7 +77,7 @@ const AdminDashboard = () => {
             .catch(err => console.error("Erreur chargement utilisateurs", err));
 
         // Charger les produits pour détecter les ruptures de stock + KPI Produits Actifs
-        fetch('http://localhost:3000/products')
+        fetch('https://cyna-api-d6b4.onrender.com/products')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
                 const outOfStockList = data.filter(p => p.stock_virtuel <= 0);
@@ -88,7 +88,7 @@ const AdminDashboard = () => {
             .catch(err => console.error("Erreur chargement alertes stock", err));
 
         // Charger les commandes pour les KPI et l'activité récente
-        fetch('http://localhost:3000/orders')
+        fetch('https://cyna-api-d6b4.onrender.com/orders')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
                 const validOrders = data.filter(o => o.status === 'paid' || o.status === 'completed');
@@ -167,7 +167,7 @@ const AdminDashboard = () => {
         
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:3000/alert', {
+            const response = await fetch('https://cyna-api-d6b4.onrender.com/alert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: alertText })
@@ -205,7 +205,7 @@ const AdminDashboard = () => {
             
             setLoadingHeroBg(true);
             try {
-                const response = await fetch('http://localhost:3000/hero-bg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_url: base64String }) });
+                const response = await fetch('https://cyna-api-d6b4.onrender.com/hero-bg', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_url: base64String }) });
                 if (response.ok) alert("✅ Image de fond mise à jour avec succès !");
                 else alert("❌ Erreur lors de la mise à jour de l'image.");
             } catch (error) { alert("❌ Erreur de connexion au serveur."); } 
@@ -241,7 +241,7 @@ const AdminDashboard = () => {
     const saveCarousel = async () => {
         setLoadingCarousel(true);
         try {
-            const response = await fetch('http://localhost:3000/carousel', {
+            const response = await fetch('https://cyna-api-d6b4.onrender.com/carousel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ items: carouselItems })
@@ -269,7 +269,7 @@ const AdminDashboard = () => {
             // On extrait uniquement les noms pour sauvegarder l'ordre
             const orderNames = topProducts.map(p => p.name);
             
-            const response = await fetch('http://localhost:3000/top-products/order', {
+            const response = await fetch('https://cyna-api-d6b4.onrender.com/top-products/order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order: orderNames })

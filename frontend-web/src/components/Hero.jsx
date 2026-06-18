@@ -236,13 +236,13 @@ const Hero = () => {
     const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop');
 
     useEffect(() => {
-        fetch('http://localhost:3000/carousel')
+        fetch('https://cyna-api-d6b4.onrender.com/carousel')
             .then(res => res.ok ? res.json() : null)
             .then(data => { if (data?.items?.length) setSlides(data.items); })
             .catch(() => {});
 
         // Récupérer l'image de fond dynamique
-        fetch('http://localhost:3000/hero-bg')
+        fetch('https://cyna-api-d6b4.onrender.com/hero-bg')
             .then(res => res.ok ? res.json() : null)
             .then(data => { if (data?.image_url) setBgImage(data.image_url); })
             .catch(() => {});

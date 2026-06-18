@@ -34,7 +34,7 @@ const QuoteRequestForm = ({ product, onClose }) => {
 
         try {
             // Requête vers le backend NestJS
-            const response = await fetch('http://localhost:3000/messages', {
+            const response = await fetch('https://cyna-api-d6b4.onrender.com/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

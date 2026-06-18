@@ -10,7 +10,7 @@ import {
 // ============================================================
 const saveConversationToBackoffice = async (conversationData) => {
     // Exemple :
-    // await fetch('http://localhost:3000/chat-sessions', {
+    // await fetch('https://cyna-api-d6b4.onrender.com/chat-sessions', {
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json' },
     //   body: JSON.stringify(conversationData)
@@ -24,7 +24,7 @@ const saveConversationToBackoffice = async (conversationData) => {
 const escalateToHuman = async (escalationData) => {
     const customText = escalationData.customMessage ? `\n\nMessage de l'utilisateur :\n${escalationData.customMessage}` : "";
     // Envoi de la demande et de l'historique vers la vraie route du Backoffice
-    const res = await fetch('http://localhost:3000/messages', {
+    const res = await fetch('https://cyna-api-d6b4.onrender.com/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -208,7 +208,7 @@ const CynaChatbot = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/chat/message', {
+            const response = await fetch('https://cyna-api-d6b4.onrender.com/chat/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

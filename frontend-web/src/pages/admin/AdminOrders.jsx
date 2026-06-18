@@ -18,8 +18,8 @@ const AdminOrders = () => {
         try {
             // On récupère simultanément les commandes et les infos des utilisateurs
             const [ordersRes, usersRes] = await Promise.all([
-                fetch('http://localhost:3000/orders').catch(() => ({ ok: false })),
-                fetch('http://localhost:3000/auth/users').catch(() => ({ ok: false }))
+                fetch('https://cyna-api-d6b4.onrender.com/orders').catch(() => ({ ok: false })),
+                fetch('https://cyna-api-d6b4.onrender.com/auth/users').catch(() => ({ ok: false }))
             ]);
             if (ordersRes.ok) {
                 const oData = await ordersRes.json();
@@ -38,7 +38,7 @@ const AdminOrders = () => {
 
     const handleStatusChange = async (id, newStatus) => {
         try {
-            const res = await fetch(`http://localhost:3000/orders/${id}/status`, {
+            const res = await fetch(`https://cyna-api-d6b4.onrender.com/orders/${id}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
