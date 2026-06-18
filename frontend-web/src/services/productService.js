@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000"; // Ton backend NestJS
+const API_URL = "https://cyna-api-d6b4.onrender.com"; // Ton backend NestJS
 
 export const fetchProducts = async () => {
   try {

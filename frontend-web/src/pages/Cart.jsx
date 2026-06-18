@@ -27,7 +27,7 @@ const Cart = () => {
     setIsApplyingCoupon(true);
     setCouponMessage({ type: '', text: '' });
     try {
-      const res = await fetch(`http://localhost:3000/coupons/validate/${couponCode}`);
+      const res = await fetch(`https://cyna-api-d6b4.onrender.com/coupons/validate/${couponCode}`);
       const data = await res.json();
       if (res.ok && data.valid) {
         setAppliedCoupon({ code: data.code, discount: data.discount_percentage });
@@ -64,7 +64,7 @@ const Cart = () => {
 
     try {
       // On appelle maintenant directement le backend NestJS qui va générer la session Stripe
-      const response = await fetch('http://localhost:3000/orders', {
+      const response = await fetch('https://cyna-api-d6b4.onrender.com/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

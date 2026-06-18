@@ -26,7 +26,7 @@ const AdminProducts = () => {
     const loadProducts = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/products');
+            const res = await fetch('https://cyna-api-d6b4.onrender.com/products');
             if (res.ok) {
                 const data = await res.json();
                 // Sécurité : on s'assure de toujours avoir un tableau
@@ -121,7 +121,7 @@ const AdminProducts = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         const method = editingProduct ? 'PUT' : 'POST';
-        const url = editingProduct ? `http://localhost:3000/products/${editingProduct.id}` : 'http://localhost:3000/products';
+        const url = editingProduct ? `https://cyna-api-d6b4.onrender.com/products/${editingProduct.id}` : 'https://cyna-api-d6b4.onrender.com/products';
 
         // Formatage pour correspondre exactement aux colonnes de Supabase (nom, prix)
         const payload = {
@@ -162,7 +162,7 @@ const AdminProducts = () => {
         if (!window.confirm("Êtes-vous sûr de vouloir supprimer définitivement ce service ?")) return;
         
         try {
-            const res = await fetch(`http://localhost:3000/products/${id}`, { method: 'DELETE' });
+            const res = await fetch(`https://cyna-api-d6b4.onrender.com/products/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setProducts(products.filter(p => p.id !== id));
             } else {
@@ -201,7 +201,7 @@ const AdminProducts = () => {
                     requires_quote: row.requires_quote || row.sur_devis ? true : false
                 }));
 
-                const res = await fetch('http://localhost:3000/products/bulk', {
+                const res = await fetch('https://cyna-api-d6b4.onrender.com/products/bulk', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

@@ -1,5 +1,5 @@
 // Ajoute cette fonction à ton api.js ou crée un orderService.js
-const API_URL = 'http://localhost:3000'; // Ton backend NestJS
+const API_URL = 'https://cyna-api-d6b4.onrender.com'; // Ton backend NestJS
 
 export const createOrder = async (userId, cart, total) => {
   const response = await fetch(`${API_URL}/orders`, {

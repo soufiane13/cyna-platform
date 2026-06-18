@@ -28,7 +28,7 @@ const ProductDetails = () => {
     const [added, setAdded] = useState(false);
 
     useEffect(() => {
-        fetch('http://localhost:3000/products')
+        fetch('https://cyna-api-d6b4.onrender.com/products')
             .then(res => res.ok ? res.json() : Promise.reject())
             .then(data => {
                 const found = data.find(p => String(p.id) === String(id));

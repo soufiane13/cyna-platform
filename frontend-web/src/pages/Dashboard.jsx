@@ -13,7 +13,7 @@ import { useToast } from '../context/ToastContext';
 // ==========================================
 const fetchUserOrders = async (userId) => {
   try {
-    const response = await fetch(`http://localhost:3000/orders/${userId}`);
+    const response = await fetch(`https://cyna-api-d6b4.onrender.com/orders/${userId}`);
     if (!response.ok) return [];
     return await response.json();
   } catch (error) {
@@ -24,7 +24,7 @@ const fetchUserOrders = async (userId) => {
 
 const downloadInvoice = async (orderId) => {
   try {
-    const response = await fetch(`http://localhost:3000/orders/${orderId}/invoice`);
+    const response = await fetch(`https://cyna-api-d6b4.onrender.com/orders/${orderId}/invoice`);
     if (!response.ok) throw new Error("Erreur téléchargement");
 
     const blob = await response.blob();
@@ -227,7 +227,7 @@ const ProfileView = ({ user, safeName }) => {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/auth/profile/${user.id}`, {
+      const res = await fetch(`https://cyna-api-d6b4.onrender.com/auth/profile/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

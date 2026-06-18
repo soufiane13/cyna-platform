@@ -44,7 +44,7 @@ const Home = () => {
       try {
         const [productData, alertRes] = await Promise.all([
           fetchProducts(),
-          fetch('http://localhost:3000/alert'),
+          fetch('https://cyna-api-d6b4.onrender.com/alert'),
         ]);
         setProducts(productData);
         if (alertRes.ok) {
