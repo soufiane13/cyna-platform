@@ -1,81 +1,93 @@
-# 🛡️ CYNA PLATFORM - SaaS Security E-commerce
+# ⚙️ CYNA Defense - Backend API
 
-> **Academic Project - Software Engineering**
-> Status: Sprint 3 Completed (Full Stack MVP)
-
-## 📋 Project Overview
-Cyna Platform is a specialized E-commerce application for selling Cybersecurity SaaS solutions (EDR, XDR, SOC). The platform features a complete customer journey and a comprehensive Back-Office for administrators.
-
-## 🚀 Key Features Implemented
-
-### 👤 Client Side (User Experience)
-- **Authentication:** Secure Sign Up / Login via Supabase Auth.
-- **Dynamic Catalog:** Browse products categorized by service type (EDR, XDR, SOC).
-- **Smart Cart:** Global state management with real-time total calculation.
-- **Order System:** Seamless checkout process connected to the database.
-- **Client Dashboard:**
-  - View order history.
-  - **Auto-generate PDF Invoices** (Backend feature).
-  - Profile management (Read-only).
-
-### 👮‍♂️ Admin Side (Back-Office)
-- **Secured Access:** Protected route `/admin`.
-- **Analytics Dashboard:** Visual charts for Revenue, Sales, and KPIs (Recharts).
-- **Order Management:** View all orders and update status (Pending -> Completed).
-- **Product CMS:** Full CRUD (Create, Read, Update, Delete) to manage the catalog without code.
+Bienvenue sur le dépôt du backend API de la plateforme **CYNA Defense**.
+Développé avec **NestJS** (Node.js/TypeScript), ce backend centralise la logique métier, la gestion des paiements via Stripe et communique de manière sécurisée avec notre base de données Supabase.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Stack Technique
 
-- **Frontend:** React.js, Vite, TailwindCSS, Lucide Icons, Recharts.
-- **Backend:** NestJS, PDFKit (Invoice Generation).
-- **Database:** Supabase (PostgreSQL).
+* **Framework :** NestJS (TypeScript)
+* **Base de données & Auth :** PostgreSQL (via Supabase)
+* **Paiement :** Stripe Webhooks
+* **Mailing :** SMTP (Nodemailer)
+* **Hébergement / CI-CD :** Render
 
 ---
 
-## ⚙️ Installation Guide
+## 🚀 Guide d'installation
 
-Follow these steps to run the project locally.
+### 1. Prérequis
+* [Node.js](https://nodejs.org/) (Version LTS)
+* `npm`
 
-### 1. Prerequisites
-- Node.js (v18 or later)
-- npm
-- A Supabase account (Free tier)
+### 2. Cloner et installer
+Naviguez dans le dossier du backend, puis installez les dépendances :
 
-### 2. Database Setup (Supabase)
-Go to your Supabase SQL Editor and run this script to initialize the tables:
+```bash
+cd cyna-backend
+npm install
 
-```sql
--- 1. Create Tables
-CREATE TABLE IF NOT EXISTS products (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  name TEXT NOT NULL,
-  description TEXT,
-  price NUMERIC NOT NULL,
-  image_url TEXT,
-  category TEXT,
-  service_type TEXT
-);
+### 3\. Variables d'environnement (.env)
 
-CREATE TABLE IF NOT EXISTS orders (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  user_id UUID NOT NULL,
-  total NUMERIC NOT NULL,
-  status TEXT DEFAULT 'pending'
-);
+Créez un fichier .env à la racine du dossier backend._⚠️ AVERTISSEMENT : Ce fichier contient des clés secrètes (SERVICE\_KEY, STRIPE\_SECRET, identifiants SMTP). Il ne doit_ _**jamais**_ _être poussé sur GitHub._
 
-CREATE TABLE IF NOT EXISTS order_items (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  order_id UUID REFERENCES orders(id),
-  product_id UUID REFERENCES products(id),
-  quantity INTEGER,
-  price_at_purchase NUMERIC
-);
+# Configuration Supabase (Clés Secrètes)
+SUPABASE_URL=[https://vvqznavlkqjelpskjplh.supabase.co](https://vvqznavlkqjelpskjplh.supabase.co)
+SUPABASE_KEY=votre_cle_publique_supabase
+SUPABASE_SERVICE_KEY=votre_cle_secrete_service_role
 
--- 2. Disable RLS for Development ease for dev purposes
-ALTER TABLE products DISABLE ROW LEVEL SECURITY;
-ALTER TABLE orders DISABLE ROW LEVEL SECURITY;
-ALTER TABLE order_items DISABLE ROW LEVEL SECURITY;
+# Configuration Stripe
+STRIPE_SECRET_KEY=rk_test_votre_cle_secrete_stripe
+
+# API Tiers
+GROQ_API_KEY=votre_cle_api_groq
+
+# URLs
+FRONTEND_URL=http://localhost:5173
+
+# Configuration Mail (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=votre_email@gmail.com
+SMTP_PASS=votre_mot_de_passe_application_gmail
+
+
+💻 Démarrer le serveur local
+
+# Mode développement standard
+npm run start
+
+# Mode développement avec rechargement à chaud (Watch mode) - Recommandé
+npm run start:dev
+
+# Mode production
+npm run start:prod
+
+L'API sera accessible par défaut sur http://localhost:3000 (ou selon le port défini par Render en production).
+
+🧪 Lancer les Tests
+-------------------
+
+Le framework NestJS intègre Jest nativement pour garantir la stabilité des contrôleurs et des services.
+
+
+# Tests unitaires
+npm run test
+
+# Tests End-to-End (e2e)
+npm run test:e2e
+
+# Rapport de couverture de code (Coverage)
+npm run test:cov
+
+📦 Déploiement (Render)
+-----------------------
+
+Ce backend est configuré pour un déploiement continu sur **Render**.Lors d'un _push_ ou d'un _merge_ sur la branche main de GitHub, Render va automatiquement :
+
+1.  Cloner le code mis à jour.
+    
+2.  Exécuter npm install et npm run build.
+    
+3.  Démarrer l'application avec la commande npm run start:prod.
